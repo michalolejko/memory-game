@@ -8,7 +8,7 @@ namespace memory_game.Connection
 {
     public static class ConnectionEnums
     {
-        public enum gameDifficulty
+        public enum GameDifficulty
         {
             Easy,
             Medium,
@@ -16,7 +16,7 @@ namespace memory_game.Connection
             Custom
         }
 
-        public enum gameType
+        public enum GameType
         {
             Normal,
             ForTime //?

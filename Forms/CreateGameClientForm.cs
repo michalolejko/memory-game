@@ -19,9 +19,9 @@ namespace Memory
         private void disconnectClientAsync(Form fm)
         {
             if (fm.InvokeRequired)
-                fm.Invoke(new MethodInvoker(() => { connection.fullDisconnect(); }));
+                fm.Invoke(new MethodInvoker(() => { connection.FullDisconnect(); }));
             else
-                connection.fullDisconnect();
+                connection.FullDisconnect();
         }
 
         protected override void startGameButton_Click(object sender, EventArgs e)
@@ -33,14 +33,14 @@ namespace Memory
         {
             try
             {
-                if (connection.startClient(addressTextBox.Text, Int32.Parse(portTextBox.Text)))
+                if (connection.StartClient(addressTextBox.Text, Int32.Parse(portTextBox.Text)))
                 {
                     startGameButton.Visible = true;
                     successfulConnectedLabel.Visible = true;
-
-                    //connection.initGameInfoReceived += new Connect.InitGameInfoReceivedEventsHandler(pol_KomunikatPrzybyl);
-                    //connection.successfullyConnected += new Connect.PolaczenieUstanowioneEventsHandler(pol_PolaczenieUstanowione);
-                    //connection.unexpectedDisconnection += new Connect.PolaczenieZerwaneEventsHandler(pol_PolaczenieKlientZerwane);
+                    /*
+                    connection.GameInfoReceived += new Connect.GameInfoReceivedEventsHandler(pol_KomunikatPrzybyl);
+                    connection.successfullyConnected += new Connect.PolaczenieUstanowioneEventsHandler(pol_PolaczenieUstanowione);
+                    connection.unexpectedDisconnection += new Connect.PolaczenieZerwaneEventsHandler(pol_PolaczenieKlientZerwane);*/
                 }
             }
             catch (Exception ex)

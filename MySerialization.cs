@@ -9,9 +9,6 @@ using System.Xml.Serialization;
 
 namespace memory_game
 {
-    /// <summary>
-    /// https://stackoverflow.com/questions/6115721/how-to-save-restore-serializable-object-to-from-file
-    /// </summary>
     public static class MySerialization
     {
         /// <summary>
@@ -20,25 +17,27 @@ namespace memory_game
         /// <typeparam name="T"></typeparam>
         /// <param name="serializableObject"></param>
         /// <param name="fileName"></param>
-        public static void SerializeObject<T>(T serializableObject, string fileName)
+        public static bool TrySerializeObject<T>(T serializableObject, string fileName)
         {
-            if (serializableObject == null) { return; }
+            if (serializableObject == null) { Console.WriteLine("Przekazany obiekt nie mozna serializowac"); return false; }
 
             try
             {
                 XmlDocument xmlDocument = new XmlDocument();
                 XmlSerializer serializer = new XmlSerializer(serializableObject.GetType());
-                using (System.IO.MemoryStream stream = new MemoryStream())
+                using (MemoryStream stream = new MemoryStream())
                 {
                     serializer.Serialize(stream, serializableObject);
                     stream.Position = 0;
                     xmlDocument.Load(stream);
                     xmlDocument.Save(fileName);
                 }
+                return true;
             }
             catch (Exception ex)
             {
-                //Log exception here
+                Console.WriteLine("Blad podczas serializacji, blad: " + ex.Message);
+                return false;
             }
         }
 
@@ -74,7 +73,7 @@ namespace memory_game
             }
             catch (Exception ex)
             {
-                //ex
+                Console.WriteLine("Blad deserializacji: " + ex.Message);
             }
 
             return objectOut;

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml.Serialization;
 
 namespace memory_game.Connection.Messages
 {
@@ -13,8 +14,8 @@ namespace memory_game.Connection.Messages
     public class Deck
     {
         public string name;
-        List<Card> cards;
-        private readonly string deckPaths = @"../../Resources/Decks/";
+        public List<Card> cards;
+        [XmlIgnore] private readonly string deckPaths = @"../../Resources/Decks/";
 
         public Deck()
         {
@@ -25,7 +26,7 @@ namespace memory_game.Connection.Messages
         {
             string[] paths = Directory.GetFiles(deckPaths);
             Deck[] decks = new Deck[paths.Length];
-            for(int i=0;i< paths.Length;i++)
+            for (int i = 0; i < paths.Length; i++)
                 decks[i] = MySerialization.DeSerializeObject<Deck>(paths[i]);
             return decks;
         }
@@ -40,20 +41,24 @@ namespace memory_game.Connection.Messages
         public void UploadNewDeck()
         {
             this.name = SetNamePopupWindowForm();
-            AddCardsFromImages(LoadImages());
-            OkNotOk_PopupWindow(TrySaveDeck());
+            if (TryAddCardsFromImages(LoadImages()))
+                OkOrNotOk_PopupWindow(TrySaveDeck());
+            else
+                OkOrNotOk_PopupWindow(false);
+
         }
-        private void OkNotOk_PopupWindow(bool okNotOk)
+        private void OkOrNotOk_PopupWindow(bool okOrNotOk)
         {
             Button okButton = new Button() { DialogResult = DialogResult.OK };
-            okButton.Text = okNotOk ? "Zapisano talie" : "Niepowodzenie";
-            Form popupForm = new Form(){AcceptButton = okButton, Size = new Size(100,100)};
+            okButton.Text = okOrNotOk ? "Zapisano talie" : "Niepowodzenie";
+            Form popupForm = new Form() { AcceptButton = okButton, Size = new Size(200, 100) };
             popupForm.Controls.Add(okButton);
             popupForm.ShowDialog();
         }
 
-        private bool AddCardsFromImages(List<Image> images)
+        private bool TryAddCardsFromImages(List<Image> images)
         {
+            if (images == null) return false;
             int count = 0;
             foreach (Image img in images)
                 cards.Add(new Card()
@@ -61,9 +66,11 @@ namespace memory_game.Connection.Messages
                     Image = img,
                     Id = count++
                 });
-            return true;
+            if (count > 0)
+                return true;
+            return false;
         }
-        
+
         private bool IsNameExists(string name)
         {
             foreach (Deck deck in LoadDecks())
@@ -112,16 +119,18 @@ namespace memory_game.Connection.Messages
                 for (int i = 0; i < paths.Length; i++)
                     images.Add(Image.FromFile(paths[i]));
             }
+            if (dialog.FileNames.Length > 90)
+            {
+                MessageBox.Show("You can upload up to 90 images :(");
+                return null;
+            }
             return images;
         }
 
         public bool TrySaveDeck()
         {
             if (!IsNameExists(this.name))
-            {
-                MySerialization.SerializeObject(this, deckPaths+name);
-                return true;
-            }
+                return MySerialization.TrySerializeObject(this, deckPaths + name) ? true : false;
             return false;
         }
     }

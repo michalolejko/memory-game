@@ -15,6 +15,7 @@ namespace Memory
     public partial class CreateGameServerForm : CreateGameForm
     {
         private Deck deck;
+        private GameInfo gameInfo;
         public CreateGameServerForm() : base()
         {
             BlockStartGame("Wybierz parametry gry");
@@ -36,49 +37,54 @@ namespace Memory
 
         protected override void startGameButton_Click(object sender, EventArgs e)
         {
-            GameInfo initGameInfo = new GameInfo
-            {
-                gameType = GetGameType(),
-                gameDifficulty = GetgameDifficulty(),
-                deck = this.deck
-            };
             //Game.StartGame(initGameInfo, this);//zastanowic sie jak z tym game - czy raczej server i client uzywac
-            FormManager.NewWindow(this, new GameWindowServerForm(connection));
+
+            FormManager.NewWindow(this, new GameWindowServerForm(connection, gameInfo));
+        }
+
+        private GameInfo TakeInitGameInfo()
+        {
+            return new GameInfo(this.deck)
+            {
+                GameType = GetGameType(),
+                GameDifficulty = GetgameDifficulty(),
+            };
         }
 
         private void uploadOwnDeckButton_Click(object sender, EventArgs e)
         {
-            deck = new Deck();
-            deck.UploadNewDeck();
+            Deck localVariable = new Deck();
+            localVariable.UploadNewDeck();
             PopulateDecksListBox();
         }
 
-        private gameType GetGameType()
+        private GameType GetGameType()
         {
             if (gameModeNormalButton.Checked)
-                return gameType.Normal;
+                return GameType.Normal;
             else
-                return gameType.ForTime;
+                return GameType.ForTime;
         }
 
-        private gameDifficulty GetgameDifficulty()
+        private GameDifficulty GetgameDifficulty()
         {
             if (easyDiffLvlButton.Checked)
-                return gameDifficulty.Easy;
+                return GameDifficulty.Easy;
             else if (mediumDiffLvlButton.Checked)
-                return gameDifficulty.Medium;
+                return GameDifficulty.Medium;
             else if (hardDiffLvlButton.Checked)
-                return gameDifficulty.Hard;
-            else return gameDifficulty.Custom;
+                return GameDifficulty.Hard;
+            else return GameDifficulty.Custom;
         }
 
         private void createServerButton_Click(object sender, EventArgs e)
         {
             try
             {
-                if (connection.startServer(addressTextBox.Text, Int32.Parse(portTextBox.Text)))
+                this.gameInfo = TakeInitGameInfo();
+                if (connection.StartServer(addressTextBox.Text, Int32.Parse(portTextBox.Text), this.gameInfo))
                 {
-                    connection.initGameInfoReceived += new Connect.InitGameInfoReceivedEventsHandler(con_InitInfoReceived);
+                    connection.GameInfoReceived += new Connect.GameInfoReceivedEventsHandler(con_GameInfoReceived);
                     connection.successfullyConnected += new Connect.SuccessfullyConnectedEventsHandler(con_SuccessfullyConnected);
                     connection.unexpectedDisconnection += new Connect.UnexpectedDisconnectionEventsHandler(con_UnexpectedDisctonnection);
 
@@ -143,7 +149,7 @@ namespace Memory
             else if (!(decksListBox.Items.Count > 0))
                 BlockStartGame("Wgraj talie");
             else
-                UnlockStartGame("Możesz rozpocząć grę");
+                UnlockStartGame("Możesz rozpocząć grę"); 
         }
     }
 }

@@ -8,7 +8,7 @@ namespace memory_game.Connection.Messages
 {
     public class GameInfoEventArgs : EventArgs
     {
-        public GameInfo initGameInfo;
+        public GameInfo gameInfo;
         public long connectionId;
     }
 }

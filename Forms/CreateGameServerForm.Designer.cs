@@ -170,10 +170,8 @@
             this.Controls.SetChildIndex(this.decksListBox, 0);
             this.Controls.SetChildIndex(this.startGameButton, 0);
             this.Controls.SetChildIndex(this.uploadOwnDeckButton, 0);
-            this.Controls.SetChildIndex(this.createServerButton, 0);
-            
+            this.Controls.SetChildIndex(this.createServerButton, 0);          
             this.Controls.SetChildIndex(this.infoTextBox, 0);
-            this.Controls.SetChildIndex(this.testButton, 0);
             this.gameModeGroupBox.ResumeLayout(false);
             this.gameModeGroupBox.PerformLayout();
             this.difficultyLevelGroupBox.ResumeLayout(false);

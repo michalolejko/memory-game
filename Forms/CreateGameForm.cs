@@ -19,10 +19,10 @@ namespace Memory
 
         protected virtual void startGameButton_Click(object sender, EventArgs e) { }
         protected void CreateGameWindow_FormClosed(object sender, FormClosedEventArgs e) {
-            connection.fullDisconnect();
+            connection.FullDisconnect();
         }
         protected void backButton_Click(object sender, EventArgs e){
-            connection.fullDisconnect();
+            connection.FullDisconnect();
             FormManager.NewWindow(this, new CreateOrConnectToServerForm());
         }
 
@@ -46,9 +46,9 @@ namespace Memory
             FormFunctions.AppendColoredText(infoTextBox, e.Address.ToString() + "\n", Color.Blue);
         }
 
-        protected void con_InitInfoReceived(object sender, GameInfoEventArgs e)
+        protected void con_GameInfoReceived(object sender, GameInfoEventArgs e)
         {
-            FormFunctions.AppendColoredText(infoTextBox, e.initGameInfo.gameType.ToString(), Color.Green);
+            FormFunctions.AppendColoredText(infoTextBox, e.gameInfo.GameType.ToString(), Color.Green);
             FormFunctions.AppendColoredText(infoTextBox, "\n", Color.Green);
         }
 

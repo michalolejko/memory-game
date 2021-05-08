@@ -9,8 +9,33 @@ namespace memory_game.Connection.Messages
     [Serializable]
     public class GameInfo
     {
-        public ConnectionEnums.gameDifficulty gameDifficulty;
-        public ConnectionEnums.gameType gameType;
-        public Deck deck;
+        public ConnectionEnums.GameDifficulty GameDifficulty { get; set; }
+        public ConnectionEnums.GameType GameType { get; set; }
+        public Deck Deck;
+        public Card[] Cards { get; set; }
+        public int currentPlayerConnectId;
+
+        public GameInfo(Deck deck)
+        {
+            this.Deck = deck;
+            InitAndFillCardsArray();
+            RandomizeArrangementOfCards();
+        }
+
+        private void RandomizeArrangementOfCards()
+        {
+            Random rnd = new Random();
+            this.Cards = this.Cards.OrderBy(x => rnd.Next()).ToArray(); 
+        }
+
+        private void InitAndFillCardsArray()
+        {
+            int numberOfRows = Deck.cards.Count(), j = 0;
+            this.Cards = new Card[2 * numberOfRows];
+            for (int i = 0; i < numberOfRows; i++)
+                Cards[i] = Deck.cards[i];
+            for (int i = numberOfRows; i < 2 * numberOfRows; i++)
+                Cards[i] = Deck.cards[j++];
+        }
     }
 }

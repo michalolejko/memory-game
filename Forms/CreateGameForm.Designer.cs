@@ -35,7 +35,7 @@
             this.addressLabel = new System.Windows.Forms.Label();
             this.portLabel = new System.Windows.Forms.Label();
             this.infoTextBox = new System.Windows.Forms.RichTextBox();
-            this.testButton = new System.Windows.Forms.Button();
+            //this.testButton = new System.Windows.Forms.Button();
             this.tooltipLabel = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
@@ -103,15 +103,15 @@
             this.infoTextBox.TabIndex = 16;
             this.infoTextBox.Text = "";
             // 
-            // button6
+            // testButton
             // 
-            this.testButton.Location = new System.Drawing.Point(12, 375);
+            /*this.testButton.Location = new System.Drawing.Point(12, 375);
             this.testButton.Name = "testButton";
             this.testButton.Size = new System.Drawing.Size(75, 23);
             this.testButton.TabIndex = 17;
             this.testButton.Text = "test";
             this.testButton.UseVisualStyleBackColor = true;
-            this.testButton.Click += new System.EventHandler(this.testButton_Click);
+            this.testButton.Click += new System.EventHandler(this.testButton_Click);*/
             // 
             // tooltipLabel
             // 
@@ -129,7 +129,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
             this.Controls.Add(this.tooltipLabel);
-            this.Controls.Add(this.testButton);
+            //this.Controls.Add(this.testButton);
             this.Controls.Add(this.infoTextBox);
             this.Controls.Add(this.portLabel);
             this.Controls.Add(this.addressLabel);
@@ -157,6 +157,6 @@
         protected System.Windows.Forms.Label addressLabel;
         protected System.Windows.Forms.Label portLabel;
         protected System.Windows.Forms.RichTextBox infoTextBox;
-        protected System.Windows.Forms.Button testButton;
+       // protected System.Windows.Forms.Button testButton;
     }
 }
