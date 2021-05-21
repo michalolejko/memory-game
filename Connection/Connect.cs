@@ -223,8 +223,13 @@ namespace memory_game.Connection
             }*/
 
             int randomClientId = new Random().Next(1, clientsList.Count + 2);
+            //jesli zaczyna serwer to byly problemy - ponizszy if zabezpiecza przed rozpoczynaniem gry przez serwer
+            if (clientsList.Count != 0 && randomClientId < 2)
+                randomClientId++;
+            //-----------------------------------------------------------------------------------------------------
             if (randomClientId > 1)
                 SendGameInfoToPlayerById(msg, randomClientId);
+            Console.WriteLine("Zaczyna gracz o id " + randomClientId);
             return randomClientId;
         }
 
@@ -233,10 +238,13 @@ namespace memory_game.Connection
         {
             if (msg is null)
                 return 0;
+           /* if (msg.currentPlayerConnectId == 0)
+                msg.currentPlayerConnectId++;*/
             if (msg.currentPlayerConnectId++ > clientsList.Count)
                 msg.currentPlayerConnectId = 1;
             /*else
                 SendGameInfoToPlayerById(msg);*/
+            Console.WriteLine("Teraz gracz o id " + msg.currentPlayerConnectId);
             gameInfo = msg;
             if (msg.currentPlayerConnectId > 1)
             {

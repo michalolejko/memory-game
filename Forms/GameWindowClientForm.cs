@@ -15,7 +15,7 @@ namespace Memory
             //InitializeComponent();
             base.EndMyTurn();
             cardsGridView.ClearSelection();
-            if(TryDownloadGameInfo())
+            if (TryDownloadGameInfo())
                 UpdateCardGridBox();
         }
 
@@ -23,14 +23,19 @@ namespace Memory
         //Pobrac info z serwera w razie dolaczenia do istniejacej gry
         private bool TryDownloadGameInfo()
         {
-            return true; 
+            return false;
         }
 
         private void GameWindowClientForm_Load(object sender, EventArgs e)
         {
 
         }
-
+        protected override void BadChoice(int rowId1, int colId1, int rowId2, int colId2, int idCard1, int idCard2)
+        {
+            //nie trafilem - oznaczam swoje ID jako ujemne
+            gameInfo.currentPlayerConnectId = -gameInfo.currentPlayerConnectId;
+            base.BadChoice(rowId1, colId1, rowId2, colId2, idCard1, idCard2);
+        }
         public override void Con_GameInfoReceived(object sender, GameInfoEventArgs e)
         {
             base.Con_GameInfoReceived(sender, e);
@@ -41,16 +46,38 @@ namespace Memory
                 InitPopulateCellsByGameInfo();
                 PopulateCardGridBoxWithBlankImages();
                 FormFunctions.AppendColoredTextWithTime(richTextBox1, "Gra rozpoczęta", Color.Green);
-                connection.SendMessageToServer(e.gameInfo);
+                //connection.SendMessageToServer(e.gameInfo);
+            }
+            //jesli ujemna to nie moj ruch - aktualizuj (wywolywane z base) + sprawdz czy to nie jest koniec
+            else if (gameInfo.currentPlayerConnectId < 0)
+            {
+                if (CheckIsItEndOfGame())
+                    EndGame();
+            }
+            //jesli dodatnia - moj ruch 
+            else if (gameInfo.currentPlayerConnectId > 0)
+            {
+                // bo ID = 1 to ruch serwera
+                if (gameInfo.currentPlayerConnectId > 1)
+                    StartMyTurn();
+            }
+
+            //0 = inicjalizacja gry
+            /*if (gameInfo.currentPlayerConnectId == 0)
+            {
+                InitPopulateCellsByGameInfo();
+                PopulateCardGridBoxWithBlankImages();
+                FormFunctions.AppendColoredTextWithTime(richTextBox1, "Gra rozpoczęta", Color.Green);
+                //connection.SendMessageToServer(e.gameInfo);
             }
             else
             {
-                    UpdateCardGridBox();
                     if (CheckIsItEndOfGame())
                         EndGame();
-                    else
-                        StartMyTurn();
-            }
+                    //if(gameInfo.currentPlayerConnectId)
+                    else if(gameInfo.currentPlayerConnectId>1)
+                            StartMyTurn();
+            }*/
         }
 
         protected override void EndMyTurn()
@@ -58,7 +85,8 @@ namespace Memory
             base.EndMyTurn();
             if (gameInfo is null)
                 gameInfo = connection.gameInfo;
-
+            if (gameInfo.gameInProgress)
+                connection.SendMessageToServer(gameInfo);
 
             /*else
                 connection.SendGameInfoToAllClients();*/
@@ -68,5 +96,6 @@ namespace Memory
                 EndGame();*/
             //connection.SendGameInfoToAllClients(gameInfo);
         }
+
     }
 }

@@ -25,6 +25,15 @@ namespace Memory
         protected int numberOfCards, numberOfColumns, numberOfRows, cardsInLastRow;
         private int myScore;
 
+        public int[,] Cells
+        {
+            get { if(cells is null)
+                    Cells = gameInfo.cells;
+                return cells;
+            }
+            set { cells = value; }
+        }
+
         public GameWindowForm(Connect connection)
         {
             myScore = 0;
@@ -48,8 +57,11 @@ namespace Memory
         public virtual void Con_GameInfoReceived(object sender, GameInfoEventArgs e)
         {
             gameInfo = e.gameInfo;
-            if(e.connectionId > 0)
-                FormFunctions.AppendColoredTextWithTime(richTextBox1, e.connectionId.ToString() + " - utrata ruchu", Color.Orange);
+            
+            UpdateCardGridBox();
+            //if (e.connectionId > 0)
+            //    FormFunctions.AppendColoredTextWithTime(richTextBox1, e.connectionId.ToString() + " - utrata ruchu", Color.Orange);
+            
             /*Console.WriteLine("czy to moje ID?: " + connection.IsItMyId(e.connectionId));
             Console.WriteLine("czy 1 to moje ID?: " + connection.IsItMyId(1L));
             Console.WriteLine("czy 2 to moje ID?: " + connection.IsItMyId(2L));*/
@@ -98,6 +110,7 @@ namespace Memory
         }
         protected void InitPopulateCellsByGameInfo()
         {
+            Console.WriteLine("Inicjalizuje cells z game info");
             if (gameInfo == null) return;
             if (numberOfColumns < 1 && numberOfRows < 1)
                 CalculateNumberOfCardColumnsRowsAndLastRow();
@@ -136,14 +149,29 @@ namespace Memory
         }
         protected void UpdateCardGridBox()
         {
-            if (gameInfo == null) return;
+            if (gameInfo == null)
+            {
+                Console.WriteLine("Odebrano gameInfo jako null!");
+                return;
+            }
             if (numberOfColumns < 1 || numberOfRows < 1)
+            {
+                Console.WriteLine("Inicjalizuje gridBox, poniewaz ilosc kolumn wynosi {0}, lub ilosc wierszy wynosi {0}",numberOfColumns,numberOfRows);
                 InitPopulateCellsByGameInfo();
+            }
+            if(!(gameInfo.cells is null))
+            {
+                Console.WriteLine("Aktualizuje tablice cells");
+                cells = gameInfo.cells;
+            } 
             for (int i = 0; i < numberOfRows; i++)
                 for (int j = 0; j < numberOfColumns; j++)
                     if (cells[i, j] >= 100)
                     {
-                        Console.WriteLine(DecodeHittedCard(i,j));
+                        Console.WriteLine("Cells: ");
+                        foreach (int cell in cells)
+                            Console.Write(cell +" ");
+                        Console.WriteLine("\n"+cells[i,j]+" - Zdekodowano cell: " + DecodeHittedCard(i,j));
                         ShowSelectedCard(i, j, DecodeHittedCard(i, j));
                     }
                         
@@ -154,7 +182,8 @@ namespace Memory
         {
             if (cells[row, col] < 100)
                 return -1;
-            return cells[row,col]-- / 100;
+            int tmp = cells[row, col] / 100;
+            return  --tmp;
         }
         private void ShowSelectedCard(int rowId, int colId, int idCard)
         {
@@ -162,20 +191,23 @@ namespace Memory
         }
         protected bool CheckIsItEndOfGame()
         {
-            int counter = 0;
-            //int cardsLeft = 0;
+            /*int counter = 0;
             foreach (int cell in cells)
                 if (IsItHittedCell(cell))
                     counter++;
-            /*else
-                cardsLeft++;
-        Console.WriteLine("Licznik trafień: "+counter/2+", pozostało jeszcze: "+cardsLeft/2);*/
-            //Console.WriteLine("Trafiono: " + counter + ", ogolnie: " +cells.Length);
-            return counter >= cells.Length;
+            return counter >= cells.Length;*/
+            //nowa, uproszczona wersja:
+            foreach (int cell in cells)
+                if (cell < 100)
+                    return false;
+            return true;
         }
 
         protected virtual void EndGame()
         {
+            gameInfo.currentPlayerConnectId = -1;
+            gameInfo.cells = cells;
+            connection.SendGameInfoToAllClients(gameInfo);
             tooltipLabel.Text = "Koniec gry";
             FormFunctions.AppendColoredTextWithTime(richTextBox1, tooltipLabel.Text, Color.Green);
             BlockSelectionInCardsGridView();
@@ -214,7 +246,7 @@ namespace Memory
             this.cardsGridView.Rows[rowId2].Cells[colId2].Value = blankImage;
         }
 
-        private void GoodChoice(int rowId1, int colId1, int rowId2, int colId2, int idCard1, int idCard2)
+        protected virtual void GoodChoice(int rowId1, int colId1, int rowId2, int colId2, int idCard1, int idCard2)
         {
             AddPoints();
             ShowSelectedCards(rowId1, colId1, rowId2, colId2, idCard1, idCard2);
@@ -222,9 +254,11 @@ namespace Memory
             FormFunctions.AppendColoredTextWithTime(richTextBox1, tooltipLabel.Text, Color.Green);
             CodeHitInCells(rowId1, colId1);
             CodeHitInCells(rowId2, colId2);
+            gameInfo.cells = cells;
+            connection.SendGameInfoToAllClients(gameInfo);
             if (CheckIsItEndOfGame())
                 EndGame();
-            connection.SendGameInfoToAllClients(gameInfo);
+            //connection.SendGameInfoToAllClients(gameInfo);
             /*Console.WriteLine("Stan tablicy cells po trafieniu: ");
             foreach (int cell in cells)
                 Console.WriteLine(cell + ", ");*/
@@ -248,7 +282,7 @@ namespace Memory
             return cell >= 100;
         }
 
-        private void BadChoice(int rowId1, int colId1, int rowId2, int colId2, int idCard1, int idCard2)
+        protected virtual void BadChoice(int rowId1, int colId1, int rowId2, int colId2, int idCard1, int idCard2)
         {
             ShowSelectedCardsForAWhile(rowId1, colId1, rowId2, colId2, idCard1, idCard2, 1000);
             tooltipLabel.Text = "Ruch: Nie trafiłeś! Tracisz turę.";
@@ -272,7 +306,6 @@ namespace Memory
         private void CheckCards(int rowId1, int colId1, int rowId2, int colId2)
         {
             int idCard1 = cells[rowId1, colId1], idCard2 = cells[rowId2, colId2];
-
             if (idCard1 == idCard2)
                 GoodChoice(rowId1, colId1, rowId2, colId2, idCard1, idCard2);
             else

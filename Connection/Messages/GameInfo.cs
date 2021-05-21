@@ -15,6 +15,7 @@ namespace memory_game.Connection.Messages
         public Card[] Cards { get; set; }
         public int currentPlayerConnectId;
         public bool gameInProgress;
+        public int[,] cells;
 
         public GameInfo(Deck deck)
         {
