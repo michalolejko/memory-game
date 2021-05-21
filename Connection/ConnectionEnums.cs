@@ -21,5 +21,10 @@ namespace memory_game.Connection
             Normal,
             ForTime //?
         }
+
+        public enum TypeOfMessage
+        {
+            NextTurn
+        }
     }
 }

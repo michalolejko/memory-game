@@ -9,6 +9,7 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace memory_game.Connection
 {
@@ -16,6 +17,7 @@ namespace memory_game.Connection
     {
         public Thread thread;
         public TcpClient tcpClient;
+        public IPEndPoint EPhost;
     }
     public class Connect
     {
@@ -24,6 +26,8 @@ namespace memory_game.Connection
         private TcpListener tcpListener;
         private Thread serverThread;
         private static long connectId = 1;
+        private int initedClients = 0;
+        private int timeout = 3;
         private readonly int maxClients = 20;
         public GameInfo gameInfo;
         //
@@ -59,6 +63,7 @@ namespace memory_game.Connection
             try
             {
                 cli.tcpClient.Connect(EPhost);
+                cli.EPhost = EPhost;
                 if (cli.tcpClient.Client.Connected)
                 {
                     cli.thread = new Thread(new ParameterizedThreadStart(ReadFromSocketThread));
@@ -168,9 +173,10 @@ namespace memory_game.Connection
         }
         public void SendGameInfoToAllClients(GameInfo msg)
         {
-            foreach (Client cli in clientsList.Values)
-                if (cli.tcpClient.Connected)
-                    binaryFormatter.Serialize(cli.tcpClient.GetStream(), msg);
+            foreach (Client client in clientsList.Values)
+                if (client.tcpClient.Connected)
+                    binaryFormatter.Serialize(client.tcpClient.GetStream(), msg);
+            //Console.WriteLine(cli);
         }
 
         public void SendGameInfoToAllClients()
@@ -181,6 +187,16 @@ namespace memory_game.Connection
         {
             msg.currentPlayerConnectId = id;
             SendGameInfoToPlayerById(msg);
+        }
+        public void SendMessageToServer(GameInfo msg)
+        {
+            //private Dictionary<long, Client> clientsList = new Dictionary<long, Client>();
+            /* foreach (long i in clientsList.Keys)
+                 Console.WriteLine(i + " ");*/
+            if (msg is null)
+                msg = gameInfo;
+            SendGameInfoToAllClients(msg);
+            //binaryFormatter.Serialize(((Client) clientsList.TryGetValue(0L).tcpClient.GetStream(), msg);
         }
 
         public void SendGameInfoToPlayerById(GameInfo msg)
@@ -196,34 +212,110 @@ namespace memory_game.Connection
         {
             msg.currentPlayerConnectId = 0;
             SendGameInfoToAllClients(msg);
+            gameInfo = msg;
             //tutaj powinno byc czekaj na odpowiedz i kontynuuj
-            Console.WriteLine("Podłączonych klientów: " + clientsList.Count);
+            Console.WriteLine("Ilość podłączonych klientów: " + clientsList.Count);
+            /*Task t = */ //WaitForResponseFromAllClients();
+            /*try { t.Wait(); }
+            catch (AggregateException)
+            {
+                Console.WriteLine("AggregateException w tasku czekajacym na odpowiedz klientow");
+            }*/
+
             int randomClientId = new Random().Next(1, clientsList.Count + 2);
             if (randomClientId > 1)
                 SendGameInfoToPlayerById(msg, randomClientId);
             return randomClientId;
         }
 
+
         public int NextTurn(GameInfo msg)
         {
-            if (msg == null)
+            if (msg is null)
                 return 0;
-            ++msg.currentPlayerConnectId;
-            if (msg.currentPlayerConnectId > clientsList.Count + 1)
+            if (msg.currentPlayerConnectId++ > clientsList.Count)
                 msg.currentPlayerConnectId = 1;
             /*else
                 SendGameInfoToPlayerById(msg);*/
+            gameInfo = msg;
             if (msg.currentPlayerConnectId > 1)
             {
                 SendGameInfoToPlayerById(msg);
-                Console.WriteLine("Teraz tura gracza o ID: " + msg.currentPlayerConnectId + " - klient");
+                return 0;
             }
-            else
-                Console.WriteLine("Teraz tura gracza o ID: " + msg.currentPlayerConnectId + " - serwer");
-
-            foreach (KeyValuePair<long, Client> kvp in clientsList)
-                Console.WriteLine(kvp.Key);
             return msg.currentPlayerConnectId;
         }
+
+
+        /*
+        public int WaitForResponseFromAllClients()
+        {
+            foreach (Client client in clientsList.Values)
+            {
+                TcpClient tcpClient = new TcpClient();
+                tcpClient = client.tcpClient;
+                if (tcpClient.ConnectAsync(client.EPhost.Address, client.EPhost.Port).Wait(2))
+                {
+                    try
+                    {
+                        GameInfo receivedMsg = (GameInfo)binaryFormatter.Deserialize(tcpClient.GetStream());
+                        GameInfoEventArgs arg = new GameInfoEventArgs
+                        {
+                            gameInfo = receivedMsg 
+                        };
+                        //Console.WriteLine(receivedMsg);
+                        GameInfoReceived?.Invoke(this, arg);
+                        if (!receivedMsg.Equals(gameInfo))
+                            return (int)clientsList.FirstOrDefault(x => x.Value.Equals(client)).Key;
+                    }
+                    catch (SerializationException)
+                    {
+                        break;
+                    }
+                    catch (Exception)
+                    {
+                        if (!tcpClient.Connected)
+                            break;
+                        return -1;
+                    }
+                }
+                
+            }
+            return 0;
+        }*/
+        /*
+        public int WaitForResponseFromAllClients()
+        {
+            if (clientsList.Count == 0)
+                return 0;
+            foreach (Client client in clientsList.Values)
+            {
+                TcpClient tcpclient = client.tcpClient;
+                if (tcpclient.Connected)
+                {
+                    try
+                    {
+                        Console.WriteLine("Deserializacja i porownywanie...");
+                        GameInfo receivedMsg = (GameInfo)binaryFormatter.Deserialize(tcpclient.GetStream());
+                        //GameInfoReceived?.Invoke(this, arg);
+
+                        if (!receivedMsg.Equals(gameInfo))
+                            return (int)clientsList.FirstOrDefault(x => x.Value.Equals(client)).Key;
+                    }
+                    catch (SerializationException)
+                    {
+                        return -1;
+                    }
+                    catch (Exception)
+                    {
+                        if (!tcpclient.Connected)
+                            return (int)clientsList.FirstOrDefault(x => x.Value.Equals(client)).Key;
+                    }
+                }
+                else
+                    return -1;
+            }
+            return 0;
+        }*/
     }
 }

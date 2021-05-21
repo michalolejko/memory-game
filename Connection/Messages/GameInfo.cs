@@ -14,9 +14,11 @@ namespace memory_game.Connection.Messages
         public Deck Deck;
         public Card[] Cards { get; set; }
         public int currentPlayerConnectId;
+        public bool gameInProgress;
 
         public GameInfo(Deck deck)
         {
+            gameInProgress = false;
             this.Deck = deck;
             InitAndFillCardsArray();
             RandomizeArrangementOfCards();
@@ -36,6 +38,16 @@ namespace memory_game.Connection.Messages
                 Cards[i] = Deck.cards[i];
             for (int i = numberOfRows; i < 2 * numberOfRows; i++)
                 Cards[i] = Deck.cards[j++];
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj.GetType() == this.GetType())
+            {
+                GameInfo tmp = (GameInfo)obj;
+                return (tmp.gameInProgress == this.gameInProgress && tmp.Deck.name==this.Deck.name);
+            }
+            return false;
         }
     }
 }

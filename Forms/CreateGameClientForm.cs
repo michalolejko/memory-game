@@ -40,7 +40,8 @@ namespace Memory
                     /*
                     connection.GameInfoReceived += new Connect.GameInfoReceivedEventsHandler(pol_KomunikatPrzybyl);
                     connection.successfullyConnected += new Connect.PolaczenieUstanowioneEventsHandler(pol_PolaczenieUstanowione);
-                    connection.unexpectedDisconnection += new Connect.PolaczenieZerwaneEventsHandler(pol_PolaczenieKlientZerwane);*/
+                    connection.unexpectedDisconnection += new Connect.UnexpectedDisconnectionEventsHandler(disconnectClientAsync);*/
+                    connectToServerButton.Enabled = false;
                 }
             }
             catch (Exception ex)
