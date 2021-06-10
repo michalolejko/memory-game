@@ -31,7 +31,8 @@ namespace memory_game.Connection
         {
             MyTurn,
             NotMyTurn,
-            InitInfoReceived
+            InitInfoSent,
+            InitInfoReceived,
         }
     }
 }

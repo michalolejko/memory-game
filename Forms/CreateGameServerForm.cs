@@ -20,6 +20,7 @@ namespace Memory
         {
             BlockStartGame("Wybierz parametry gry");
             InitializeComponent();
+            createServerButton.Select();
             this.deck = new Deck();
             PopulateDecksListBox();
             InitWindowChecks();
@@ -100,7 +101,7 @@ namespace Memory
                 FormFunctions.AppendColoredText(infoTextBox, ex.Message + "\n", Color.Red);
                 tooltipLabel.Text = "Nie udało się stworzyć serwera";
             }
-
+            startGameButton.Select();
         }
 
         private void CreateGameServerForm_Load(object sender, EventArgs e)

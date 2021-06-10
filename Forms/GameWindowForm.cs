@@ -19,10 +19,12 @@ namespace Memory
 {
     public partial class GameWindowForm : Form
     {
+        protected System.Threading.Thread populatingGridBoxThread;
         protected Connect connection;
         protected GameInfo gameInfo;
         protected int[,] cells;
         protected int numberOfCards, numberOfColumns, numberOfRows, cardsInLastRow;
+        protected long myId;
         private int myScore;
         private bool isEndOfGame;
         private Image blankImage;
@@ -40,6 +42,7 @@ namespace Memory
 
         public GameWindowForm(Connect connection)
         {
+            myId = -256;
             gameInfo = new GameInfo();
             gameInfo.gameInProgress = false;
             blankImage = Image.FromFile(@"../../Resources/Cards/Blank.png");
@@ -64,6 +67,10 @@ namespace Memory
 
         public virtual void Con_GameInfoReceived(object sender, GameInfoEventArgs e)
         {
+            if (populatingGridBoxThread != null && populatingGridBoxThread.IsAlive)
+                populatingGridBoxThread.Join();
+            if (e.gameInfo.ResponseEnum == ConnectionEnums.ResponseEnum.InitInfoSent)
+                myId = e.gameInfo.myId;
             if (isEndOfGame)
                 return;
             if (!e.gameInfo.gameInProgress)
@@ -139,26 +146,38 @@ namespace Memory
             Console.WriteLine("Zainicializowalem cells z gameInfo");
         }
 
-
         protected void PopulateCardGridBoxWithBlankImages()
         {
             if (gameInfo == null) return;
+            Console.WriteLine("PopulateCardGridBoxWithBlankImages: gameInfo nie jest nullem");
             if (cells == null) InitPopulateCellsByGameInfo();
+            Console.WriteLine("PopulateCardGridBoxWithBlankImages: tworze kolumny");
             for (int i = 0; i < numberOfColumns; i++)
             {
                 DataGridViewImageColumn column = new DataGridViewImageColumn();
                 column.ImageLayout = DataGridViewImageCellLayout.Stretch;
                 cardsGridView.Columns.Add(column);
             }
+            Console.WriteLine("PopulateCardGridBoxWithBlankImages: tworze wiersze");
             for (int i = 0; i < numberOfRows; i++)
-            {
+            { 
                 Image[] imagesInRow = new Image[numberOfColumns];
                 for (int j = 0; j < numberOfColumns; j++)
                     if (cells[i, j] >= 0)
                         imagesInRow[j] = blankImage;
-                cardsGridView.Rows.Add(imagesInRow);
+                Console.WriteLine("Iteracja wierszy: " + i + ", Dodaje: " + imagesInRow.Length + " obrazkow");
+                try
+                {
+                    Console.WriteLine(cardsGridView.Rows.Add(imagesInRow));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Exception when adding rows to card grid view: " + ex.Message);
+                }
             }
             Console.WriteLine("Wypełniłem grid box pustymi obrazkami");
+            if (populatingGridBoxThread != null && populatingGridBoxThread.IsAlive)
+                populatingGridBoxThread.Abort();
         }
         protected void UpdateCardGridBox()
         {
@@ -373,6 +392,9 @@ namespace Memory
 
         protected virtual void BadChoice(int rowId1, int colId1, int rowId2, int colId2, int idCard1, int idCard2)
         {
+            tooltipLabel.Text = "Ruch: Nie trafiłeś! Tracisz turę.";
+            FormFunctions.AppendColoredTextWithTime(richTextBox1, tooltipLabel.Text, Color.Red);
+
             ShowSelectedCardsForAWhile(rowId1, colId1, rowId2, colId2, idCard1, idCard2, 1000);
             gameInfo.rowId1 = rowId1;
             gameInfo.rowId2 = rowId2;
@@ -380,9 +402,7 @@ namespace Memory
             gameInfo.colId2 = colId2;
             gameInfo.idCard1 = idCard1;
             gameInfo.idCard2 = idCard2;
-
-            tooltipLabel.Text = "Ruch: Nie trafiłeś! Tracisz turę.";
-            FormFunctions.AppendColoredTextWithTime(richTextBox1, tooltipLabel.Text, Color.Red);
+    
             EndMyTurn();
         }
         /*
@@ -420,6 +440,8 @@ namespace Memory
         protected void cardsGridView_SelectionChanged(object sender, EventArgs e)
         {
             //max 2 cells selected
+            /*if (populatingGridBoxThread != null && populatingGridBoxThread.IsAlive)
+                populatingGridBoxThread.Join();*/
             if (this.cardsGridView.SelectedCells.Count >= 2)
             {
                 int colId1 = this.cardsGridView.SelectedCells[0].ColumnIndex, colId2 = this.cardsGridView.SelectedCells[1].ColumnIndex;

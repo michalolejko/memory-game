@@ -6,11 +6,14 @@ using memory_game.Forms;
 using System;
 using System.Drawing;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Memory
 {
     public partial class GameWindowServerForm : GameWindowForm
     {
+        private Task responseTask;
+        private CancellationTokenSource responseSource;
         public GameWindowServerForm(Connect connection, GameInfo gameInfo) : base(connection)
         {
             //con.KomunikatPrzybyl += new Connect.KomunikatEventsHandler(pol_KomunikatPrzybyl);
@@ -34,24 +37,22 @@ namespace Memory
             //jesli jest zerem to serwer otrzymal response
             if (e.gameInfo.currentPlayerConnectId == 0)
             {
-                //1.
-                //teraz przydaloby sie zliczyc ilosc responsow - jesli jest mniejsza niz ilosc 
-                //graczy w kolejce to znaczy, ze ktos nie otrzymal wiadomosci:
-                //1.1
-                //w connect jest responseCounter - przy nextTurn jest zerowany,
-                //response powinien go zwiekszac, a jesli != liczbie graczy to cos nie tak i rozeslij jeszcze raz
-                //1.2
-                //W ConnectionEnums dalem ResponseEnum (statycznie) - mozna dac np - moja tura, nie moja tura
-                //2. 
-                //mozna porownac wiadomosc z responsa do swojej np przy starcie gry:
-                //jesli tablica cells sie nie zgadza na poczatku to wyslij jeszcze raz init info
-                //mozna np jesli cos sie nie przeslalo (jakos to sprawdzic-ze cos jest nullem np) to jeszcze raz
-
-                //1.2
+                //klient otrzymal info, ze teraz jego tura
+                if(e.gameInfo.ResponseEnum == ConnectionEnums.ResponseEnum.MyTurn)
+                {
+                    responseSource.Cancel();
+                    Console.WriteLine("Klient o id " + e.gameInfo.myId + " otrzymał info, o swojej turze");
+                }
+                //potwierdzenie, ze klient otrzymal init info
                 Console.WriteLine("Serwer otrzymal response");
                 if(e.gameInfo.ResponseEnum == ConnectionEnums.ResponseEnum.InitInfoReceived)
                 {
                     Console.WriteLine("Otrzymalem init response od id = " + e.gameInfo.myId);
+                    if (e.gameInfo.cells != gameInfo.cells)
+                    {
+                        Console.WriteLine("Wysylam ponownie informacje do klienta o id: " + e.gameInfo.myId);
+                        connection.SendGameInfoToPlayerById(connection.gameInfo, (int)e.gameInfo.myId);
+                    }        
                 }
             }
             else
@@ -66,8 +67,26 @@ namespace Memory
                     ShowSelectedCardsForAWhile(gameInfo, 1000);
                     gameInfo.currentPlayerConnectId = -gameInfo.currentPlayerConnectId;
                     //jesli nastepna tura zwraca 1 to znaczy, ze teraz tura serwera
-                    if (gameInfo.gameInProgress && connection.NextTurn(gameInfo) == 1)
+                    int nextTurnId = connection.NextTurn(gameInfo);
+                    if (gameInfo.gameInProgress && nextTurnId == 1)
                         StartMyTurn();
+                    else
+                    {
+                        int counter = 1;
+                        TryAgain:
+                        responseSource = new CancellationTokenSource();
+                        responseTask = Task.Run(async delegate
+                        {
+                            await Task.Delay(2000, responseSource.Token);
+                        });
+                        if (!responseTask.IsCanceled && counter < 10)
+                        {
+                            Console.WriteLine("Klient nie odebral info o swojej turze, probuje " + ++counter + " raz");
+                            connection.SendGameInfoToPlayerById(gameInfo, nextTurnId);
+                            goto TryAgain;
+                        }
+                            
+                    }
                 }
                 //jesli ID dodatnie - trafil, poinformuj reszte klientow 
                 else if (gameInfo.currentPlayerConnectId > 0)
@@ -102,6 +121,7 @@ namespace Memory
         private void startGameButton_Click(object sender, EventArgs e)
         {
             gameInfo.gameInProgress = true;
+            gameInfo.ResponseEnum = ConnectionEnums.ResponseEnum.InitInfoSent;
             if (connection.TryStartGameAsServer(gameInfo) == 1)
                 StartMyTurn();
             this.startGameButton.Text = "Rozpoczęto";
@@ -118,8 +138,12 @@ namespace Memory
 
         protected override void BadChoice(int rowId1, int colId1, int rowId2, int colId2, int idCard1, int idCard2)
         {
-            // connection.SendGameInfoToAllClients(gameInfo);
             base.BadChoice(rowId1, colId1, rowId2, colId2, idCard1, idCard2);
+            if (gameInfo.currentPlayerConnectId > 0)
+                gameInfo.currentPlayerConnectId = -gameInfo.currentPlayerConnectId;
+            else if (gameInfo.currentPlayerConnectId == 0)
+                gameInfo.currentPlayerConnectId = -1;
+            connection.SendGameInfoToAllClients(gameInfo);
         }
         /*protected override void StartMyTurn()
         {

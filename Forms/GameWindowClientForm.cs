@@ -5,6 +5,7 @@ using memory_game.Connection.Messages;
 using memory_game.Forms;
 using System;
 using System.Drawing;
+using System.Threading;
 
 namespace Memory
 {
@@ -18,7 +19,6 @@ namespace Memory
             if (TryDownloadGameInfo())
                 UpdateCardGridBox();
         }
-
 
         //Pobrac info z serwera w razie dolaczenia do istniejacej gry
         private bool TryDownloadGameInfo()
@@ -37,17 +37,29 @@ namespace Memory
                 gameInfo.currentPlayerConnectId = -gameInfo.currentPlayerConnectId;
             base.BadChoice(rowId1, colId1, rowId2, colId2, idCard1, idCard2);
         }
+        private void SendResponseThatYouGotTurn()
+        {
+            GameInfo tmp = new GameInfo();
+            tmp.ResponseEnum = ConnectionEnums.ResponseEnum.MyTurn;
+            tmp.currentPlayerConnectId = 0;
+            tmp.myId = myId;
+            connection.SendMessageToServer(tmp);
+            Console.WriteLine("Wysłałem response o tym, że mam turę do serwera");
+        }
         private void SendResponseThatYouGotInitInfo()
         {
             GameInfo tmp = new GameInfo();
             tmp.ResponseEnum = ConnectionEnums.ResponseEnum.InitInfoReceived;
             tmp.currentPlayerConnectId = 0;
+            tmp.myId = myId;
             connection.SendMessageToServer(tmp);
             Console.WriteLine("Wysłałem init response do serwera");
         }
         public override void Con_GameInfoReceived(object sender, GameInfoEventArgs e)
         {
             base.Con_GameInfoReceived(sender, e);
+            /*if (populatingGridBoxThread.IsAlive)
+                populatingGridBoxThread.Join();*/
             DebugCardGridBox();
             Console.WriteLine("Odebrano z id: " + e.connectionId + ", odebrano: " + gameInfo.currentPlayerConnectId);
             //0 = inicjalizacja gry
@@ -57,7 +69,9 @@ namespace Memory
                 FormFunctions.AppendColoredTextWithTime(richTextBox1, "Gra rozpoczęta", Color.Green);
                 Console.WriteLine("Gra rozpoczęta");
                 SendResponseThatYouGotInitInfo();
-                PopulateCardGridBoxWithBlankImages();       
+                populatingGridBoxThread = new Thread(new ThreadStart(PopulateCardGridBoxWithBlankImages));
+                populatingGridBoxThread.Start();
+                //PopulateCardGridBoxWithBlankImages();
             }
             //jesli ujemna to nie moj ruch - aktualizuj (wywolywane z base) + sprawdz czy to nie jest koniec + wyswietl na chwile karty
             else if (gameInfo.currentPlayerConnectId < 0)
@@ -65,7 +79,10 @@ namespace Memory
                 if (CheckIsItEndOfGame())
                     EndGame();
                 else
+                {
+                    Console.WriteLine("Pokazuje na chwile karty");
                     ShowSelectedCardsForAWhile(gameInfo, 1000);
+                } 
             }
             //jesli dodatnia - moj ruch (id = 1 to zawsze serwer)
             else if (gameInfo.currentPlayerConnectId > 1)
@@ -96,6 +113,7 @@ namespace Memory
             base.EndMyTurn();
             if (gameInfo is null)
                 gameInfo = connection.gameInfo;
+            gameInfo.ResponseEnum = ConnectionEnums.ResponseEnum.NotMyTurn;
             if (gameInfo.gameInProgress)
                 connection.SendMessageToServer(gameInfo);
 

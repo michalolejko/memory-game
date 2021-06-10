@@ -200,13 +200,10 @@ namespace memory_game.Connection
         }
         public void SendMessageToServer(GameInfo msg)
         {
-            //private Dictionary<long, Client> clientsList = new Dictionary<long, Client>();
-            /* foreach (long i in clientsList.Keys)
-                 Console.WriteLine(i + " ");*/
-            if (msg is null)
+            /*if (msg is null)
                 msg = gameInfo;
-            SendGameInfoToAllClients(msg);
-            //binaryFormatter.Serialize(((Client) clientsList.TryGetValue(0L).tcpClient.GetStream(), msg);
+            SendGameInfoToAllClients(msg);*/
+            binaryFormatter.Serialize(clientsList[0].tcpClient.GetStream(), msg);
         }
 
         public void SendGameInfoToPlayerById(GameInfo msg)
