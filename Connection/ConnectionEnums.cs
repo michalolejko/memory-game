@@ -21,10 +21,17 @@ namespace memory_game.Connection
             Normal,
             ForTime //?
         }
-
+        /* //unused
         public enum TypeOfMessage
         {
             NextTurn
+        }*/
+
+        public enum ResponseEnum
+        {
+            MyTurn,
+            NotMyTurn,
+            InitInfoReceived
         }
     }
 }

@@ -70,6 +70,8 @@ namespace memory_game.Forms
 
             await ShowSelectedCardsAsync();
             System.Threading.Thread.Sleep(time);
+            //Task task = Task.Delay(time);
+            //task.Wait();
             HideSelectedCards();
         }
         public static void ShowSelectedCards()
@@ -87,6 +89,8 @@ namespace memory_game.Forms
         private static Task ShowSelectedCardsAsync()
         {
             Task task = Task.Factory.StartNew(ShowSelectedCards);
+            Task.Delay(1000);
+            Task.WaitAll();
             return task;
         }
 

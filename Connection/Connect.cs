@@ -30,6 +30,7 @@ namespace memory_game.Connection
         private int timeout = 3;
         private readonly int maxClients = 20;
         public GameInfo gameInfo;
+        public int responseCounter;
         //
         //EventHandlers
         //
@@ -44,6 +45,7 @@ namespace memory_game.Connection
 
         public bool StartServer(string address, int port, GameInfo gameInfo) //zawsze true!
         {
+            responseCounter = 0;
             this.gameInfo = gameInfo;
             tcpListener = new TcpListener(IPAddress.Parse(address), port);
             tcpListener.Start();
@@ -171,12 +173,20 @@ namespace memory_game.Connection
                     tcpListener.Server.Close();
             }
         }
+        //private Dictionary<long, Client> clientsList = new Dictionary<long, Client>();
         public void SendGameInfoToAllClients(GameInfo msg)
         {
+            /*
             foreach (Client client in clientsList.Values)
                 if (client.tcpClient.Connected)
-                    binaryFormatter.Serialize(client.tcpClient.GetStream(), msg);
-            //Console.WriteLine(cli);
+                    binaryFormatter.Serialize(client.tcpClient.GetStream(), msg);*/
+            //dodaj swoje ID:
+            foreach (long key in clientsList.Keys)
+                if (clientsList[key].tcpClient.Connected)
+                {
+                    msg.myId = key;
+                    binaryFormatter.Serialize(clientsList[key].tcpClient.GetStream(), msg);
+                }
         }
 
         public void SendGameInfoToAllClients()
@@ -236,8 +246,9 @@ namespace memory_game.Connection
 
         public int NextTurn(GameInfo msg)
         {
+            responseCounter = 0;
             if (msg is null)
-                return 0;
+                msg = gameInfo;
            /* if (msg.currentPlayerConnectId == 0)
                 msg.currentPlayerConnectId++;*/
             if (msg.currentPlayerConnectId++ > clientsList.Count)
@@ -253,6 +264,8 @@ namespace memory_game.Connection
             }
             return msg.currentPlayerConnectId;
         }
+
+        public int GetNumberOfPlayers() { return clientsList.Count;  }
 
 
         /*

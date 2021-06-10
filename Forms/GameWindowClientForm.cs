@@ -33,32 +33,43 @@ namespace Memory
         protected override void BadChoice(int rowId1, int colId1, int rowId2, int colId2, int idCard1, int idCard2)
         {
             //nie trafilem - oznaczam swoje ID jako ujemne
-            gameInfo.currentPlayerConnectId = -gameInfo.currentPlayerConnectId;
+            if(gameInfo.currentPlayerConnectId >= 0)
+                gameInfo.currentPlayerConnectId = -gameInfo.currentPlayerConnectId;
             base.BadChoice(rowId1, colId1, rowId2, colId2, idCard1, idCard2);
+        }
+        private void SendResponseThatYouGotInitInfo()
+        {
+            GameInfo tmp = new GameInfo();
+            tmp.ResponseEnum = ConnectionEnums.ResponseEnum.InitInfoReceived;
+            tmp.currentPlayerConnectId = 0;
+            connection.SendMessageToServer(tmp);
+            Console.WriteLine("Wysłałem init response do serwera");
         }
         public override void Con_GameInfoReceived(object sender, GameInfoEventArgs e)
         {
             base.Con_GameInfoReceived(sender, e);
+            DebugCardGridBox();
             Console.WriteLine("Odebrano z id: " + e.connectionId + ", odebrano: " + gameInfo.currentPlayerConnectId);
             //0 = inicjalizacja gry
             if (gameInfo.currentPlayerConnectId == 0)
             {
                 InitPopulateCellsByGameInfo();
-                PopulateCardGridBoxWithBlankImages();
                 FormFunctions.AppendColoredTextWithTime(richTextBox1, "Gra rozpoczęta", Color.Green);
-                //connection.SendMessageToServer(e.gameInfo);
+                Console.WriteLine("Gra rozpoczęta");
+                SendResponseThatYouGotInitInfo();
+                PopulateCardGridBoxWithBlankImages();       
             }
-            //jesli ujemna to nie moj ruch - aktualizuj (wywolywane z base) + sprawdz czy to nie jest koniec
+            //jesli ujemna to nie moj ruch - aktualizuj (wywolywane z base) + sprawdz czy to nie jest koniec + wyswietl na chwile karty
             else if (gameInfo.currentPlayerConnectId < 0)
             {
                 if (CheckIsItEndOfGame())
                     EndGame();
+                else
+                    ShowSelectedCardsForAWhile(gameInfo, 1000);
             }
-            //jesli dodatnia - moj ruch 
-            else if (gameInfo.currentPlayerConnectId > 0)
+            //jesli dodatnia - moj ruch (id = 1 to zawsze serwer)
+            else if (gameInfo.currentPlayerConnectId > 1)
             {
-                // bo ID = 1 to ruch serwera
-                if (gameInfo.currentPlayerConnectId > 1)
                     StartMyTurn();
             }
 

@@ -11,18 +11,27 @@ namespace memory_game.Connection.Messages
     {
         public ConnectionEnums.GameDifficulty GameDifficulty { get; set; }
         public ConnectionEnums.GameType GameType { get; set; }
+        public ConnectionEnums.ResponseEnum ResponseEnum { get; set; }
         public Deck Deck;
         public Card[] Cards { get; set; }
         public int currentPlayerConnectId;
+        public long myId;
         public bool gameInProgress;
         public int[,] cells;
+        public int rowId1, colId1, rowId2, colId2, idCard1, idCard2;
+        //public bool isEndOfGamex;
 
+        public GameInfo()
+        {
+            gameInProgress = false;
+        }
         public GameInfo(Deck deck)
         {
             gameInProgress = false;
             this.Deck = deck;
             InitAndFillCardsArray();
             RandomizeArrangementOfCards();
+            //isEndOfGame = false;
         }
 
         private void RandomizeArrangementOfCards()
