@@ -14,6 +14,7 @@ namespace Memory
         public CreateGameClientForm() : base()
         {
             InitializeComponent();
+            connectToServerButton.Select();
         }
 
         private void disconnectClientAsync(Form fm)
@@ -49,7 +50,7 @@ namespace Memory
                 FormFunctions.AppendColoredText(infoTextBox, "Błąd podłaczenia: \n", Color.Red);
                 FormFunctions.AppendColoredText(infoTextBox, ex.Message + "\n", Color.Red);
             }
-
+            startGameButton.Select();
         }
 
         private void Form3_Load(object sender, EventArgs e)

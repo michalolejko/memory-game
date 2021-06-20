@@ -16,17 +16,19 @@ namespace Memory
         public CreateOrConnectToServerForm()
         {
             InitializeComponent();
-        }
-
-        private void connectToServerButton_Click(object sender, EventArgs e)
-        {
-            FormManager.NewWindow(this, new CreateGameClientForm());
+            connectToServerButton.Select();
         }
 
         private void createServerButton_Click(object sender, EventArgs e)
         {
             FormManager.NewWindow(this, new CreateGameServerForm());
         }
+        private void connectToServerButton_Click(object sender, EventArgs e)
+        {
+            FormManager.NewWindow(this, new CreateGameClientForm());
+        }
+
+
            
         private void CreateOrConnectToServerForm_Load(object sender, EventArgs e)
         {

@@ -30,6 +30,7 @@ namespace memory_game.Connection
         private int timeout = 3;
         private readonly int maxClients = 20;
         public GameInfo gameInfo;
+        public int responseCounter;
         //
         //EventHandlers
         //
@@ -44,6 +45,7 @@ namespace memory_game.Connection
 
         public bool StartServer(string address, int port, GameInfo gameInfo) //zawsze true!
         {
+            responseCounter = 0;
             this.gameInfo = gameInfo;
             tcpListener = new TcpListener(IPAddress.Parse(address), port);
             tcpListener.Start();
@@ -171,12 +173,20 @@ namespace memory_game.Connection
                     tcpListener.Server.Close();
             }
         }
+        //private Dictionary<long, Client> clientsList = new Dictionary<long, Client>();
         public void SendGameInfoToAllClients(GameInfo msg)
         {
+            /*
             foreach (Client client in clientsList.Values)
                 if (client.tcpClient.Connected)
-                    binaryFormatter.Serialize(client.tcpClient.GetStream(), msg);
-            //Console.WriteLine(cli);
+                    binaryFormatter.Serialize(client.tcpClient.GetStream(), msg);*/
+            //dodaj swoje ID:
+            foreach (long key in clientsList.Keys)
+                if (clientsList[key].tcpClient.Connected)
+                {
+                    msg.myId = key;
+                    binaryFormatter.Serialize(clientsList[key].tcpClient.GetStream(), msg);
+                }
         }
 
         public void SendGameInfoToAllClients()
@@ -190,13 +200,10 @@ namespace memory_game.Connection
         }
         public void SendMessageToServer(GameInfo msg)
         {
-            //private Dictionary<long, Client> clientsList = new Dictionary<long, Client>();
-            /* foreach (long i in clientsList.Keys)
-                 Console.WriteLine(i + " ");*/
-            if (msg is null)
+            /*if (msg is null)
                 msg = gameInfo;
-            SendGameInfoToAllClients(msg);
-            //binaryFormatter.Serialize(((Client) clientsList.TryGetValue(0L).tcpClient.GetStream(), msg);
+            SendGameInfoToAllClients(msg);*/
+            binaryFormatter.Serialize(clientsList[0].tcpClient.GetStream(), msg);
         }
 
         public void SendGameInfoToPlayerById(GameInfo msg)
@@ -211,6 +218,11 @@ namespace memory_game.Connection
         public int TryStartGameAsServer(GameInfo msg)
         {
             msg.currentPlayerConnectId = 0;
+            int randomClientId = new Random().Next(1, clientsList.Count + 2);
+            if (clientsList.Count != 0 && randomClientId < 2)
+                randomClientId++;
+            msg.rowId2 = randomClientId;
+            msg.rowId1 = GetNumberOfPlayers();
             SendGameInfoToAllClients(msg);
             gameInfo = msg;
             //tutaj powinno byc czekaj na odpowiedz i kontynuuj
@@ -221,11 +233,9 @@ namespace memory_game.Connection
             {
                 Console.WriteLine("AggregateException w tasku czekajacym na odpowiedz klientow");
             }*/
-
-            int randomClientId = new Random().Next(1, clientsList.Count + 2);
             //jesli zaczyna serwer to byly problemy - ponizszy if zabezpiecza przed rozpoczynaniem gry przez serwer
-            if (clientsList.Count != 0 && randomClientId < 2)
-                randomClientId++;
+            
+            Thread.Sleep(5);
             //-----------------------------------------------------------------------------------------------------
             if (randomClientId > 1)
                 SendGameInfoToPlayerById(msg, randomClientId);
@@ -236,8 +246,9 @@ namespace memory_game.Connection
 
         public int NextTurn(GameInfo msg)
         {
+            responseCounter = 0;
             if (msg is null)
-                return 0;
+                msg = gameInfo;
            /* if (msg.currentPlayerConnectId == 0)
                 msg.currentPlayerConnectId++;*/
             if (msg.currentPlayerConnectId++ > clientsList.Count)
@@ -253,6 +264,8 @@ namespace memory_game.Connection
             }
             return msg.currentPlayerConnectId;
         }
+
+        public int GetNumberOfPlayers() { return clientsList.Count;  }
 
 
         /*

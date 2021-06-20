@@ -14,20 +14,28 @@ using System.IO;
 using memory_game.Connection;
 using memory_game.Forms;
 using memory_game.Connection.Messages;
+using System.Threading;
 
 namespace Memory
 {
     public partial class GameWindowForm : Form
     {
+        protected System.Threading.Thread cardGrdiBoxThread;
         protected Connect connection;
         protected GameInfo gameInfo;
         protected int[,] cells;
         protected int numberOfCards, numberOfColumns, numberOfRows, cardsInLastRow;
+        protected long myId;
         private int myScore;
+        private bool isEndOfGame;
+        private Image blankImage;
+        private List<string> playersList;
 
         public int[,] Cells
         {
-            get { if(cells is null)
+            get
+            {
+                if (cells is null)
                     Cells = gameInfo.cells;
                 return cells;
             }
@@ -36,6 +44,12 @@ namespace Memory
 
         public GameWindowForm(Connect connection)
         {
+            playersList = new List<string>();
+            myId = -256;
+            gameInfo = new GameInfo();
+            gameInfo.gameInProgress = false;
+            blankImage = Image.FromFile(@"../../Resources/Cards/Blank.png");
+            isEndOfGame = false;
             myScore = 0;
             InitializeComponent();
             this.connection = connection;
@@ -43,7 +57,7 @@ namespace Memory
             connection.GameInfoReceived += new Connect.GameInfoReceivedEventsHandler(Con_GameInfoReceived);
             connection.successfullyConnected += new Connect.SuccessfullyConnectedEventsHandler(Con_SuccessfullyConnected);
             connection.unexpectedDisconnection += new Connect.UnexpectedDisconnectionEventsHandler(Con_UnexpectedDisctonnection);
-            
+
         }
 
         public virtual void Con_UnexpectedDisctonnection(object sender, UnexpectedDisconnectionEventArgs e)
@@ -56,19 +70,63 @@ namespace Memory
 
         public virtual void Con_GameInfoReceived(object sender, GameInfoEventArgs e)
         {
+            try
+            {
+                Console.WriteLine("Otrzymalem id = " + e.gameInfo.currentPlayerConnectId);
+                int itemToSelect = e.gameInfo.currentPlayerConnectId;
+                if (itemToSelect == 0)
+                    itemToSelect = e.gameInfo.rowId2;
+                else if (itemToSelect < 0)
+                    itemToSelect = -itemToSelect;
+                Console.WriteLine("Do zaznaczenia na liscie graczy: " + itemToSelect);
+                /*for (int i = 0; i <= playerListBox.Items.Count-1; i++)
+                    if(itemToSelect != i)
+                        playerListBox.SetSelected(i, false);
+                    else*/
+                playerListBox.SetSelected(--itemToSelect, true);
+            }
+            catch (Exception exc)
+            {
+                Console.WriteLine("Exception przy oznaczaniu gracza: " + exc.Message);
+            }
+            if (cardsGridView.Rows.Count < numberOfRows)
+                new Thread(new ThreadStart(DebugLastRowInGridBoxWithBlankImages));
+            if (cardGrdiBoxThread != null && cardGrdiBoxThread.IsAlive)
+                cardGrdiBoxThread.Join();
+            if (e.gameInfo.ResponseEnum == ConnectionEnums.ResponseEnum.InitInfoSent && myId < -200)
+            {
+                myId = e.gameInfo.myId;
+                myIdInfo.Text = "Moje ID: " + myId.ToString();
+                FillPlayersList(e.gameInfo.rowId1);
+            }
+            if (isEndOfGame)
+                return;
+            if (!e.gameInfo.gameInProgress)
+                EndGame();
             gameInfo = e.gameInfo;
-            
             UpdateCardGridBox();
+            DebugCellsArray();
+            System.Threading.Thread.Sleep(5);
+            
             //if (e.connectionId > 0)
             //    FormFunctions.AppendColoredTextWithTime(richTextBox1, e.connectionId.ToString() + " - utrata ruchu", Color.Orange);
-            
-            /*Console.WriteLine("czy to moje ID?: " + connection.IsItMyId(e.connectionId));
-            Console.WriteLine("czy 1 to moje ID?: " + connection.IsItMyId(1L));
-            Console.WriteLine("czy 2 to moje ID?: " + connection.IsItMyId(2L));*/
-            //Console.WriteLine("Z klasy connect: " + connection.getConnectId());
+
+                /*Console.WriteLine("czy to moje ID?: " + connection.IsItMyId(e.connectionId));
+                Console.WriteLine("czy 1 to moje ID?: " + connection.IsItMyId(1L));
+                Console.WriteLine("czy 2 to moje ID?: " + connection.IsItMyId(2L));*/
+                //Console.WriteLine("Z klasy connect: " + connection.getConnectId());
         }
 
-
+        protected void FillPlayersList(int maxId)
+        {
+            if (playerListBox.Items.Count > 0)
+                return;
+            for(int i = 1; i <= maxId+1; i++)
+            {
+                playersList.Add("Player " + i);
+                playerListBox.Items.Add("Player " + i);
+            }
+        }
         protected void Form2_Load(object sender, EventArgs e)
         {
             this.cardsGridView.ClearSelection();
@@ -110,7 +168,6 @@ namespace Memory
         }
         protected void InitPopulateCellsByGameInfo()
         {
-            Console.WriteLine("Inicjalizuje cells z game info");
             if (gameInfo == null) return;
             if (numberOfColumns < 1 && numberOfRows < 1)
                 CalculateNumberOfCardColumnsRowsAndLastRow();
@@ -124,28 +181,63 @@ namespace Memory
                     for (int j = numberOfColumnsInThisRow; j < numberOfColumns; j++)
                         cells[i, j] = -1;
             }
+            Console.WriteLine("Zainicializowalem cells z gameInfo");
         }
-
 
         protected void PopulateCardGridBoxWithBlankImages()
         {
             if (gameInfo == null) return;
+            Console.WriteLine("PopulateCardGridBoxWithBlankImages: gameInfo nie jest nullem");
             if (cells == null) InitPopulateCellsByGameInfo();
-            Image blankImage = Image.FromFile(@"../../Resources/Cards/Blank.png");
+            Console.WriteLine("PopulateCardGridBoxWithBlankImages: tworze kolumny");
             for (int i = 0; i < numberOfColumns; i++)
             {
                 DataGridViewImageColumn column = new DataGridViewImageColumn();
                 column.ImageLayout = DataGridViewImageCellLayout.Stretch;
                 cardsGridView.Columns.Add(column);
             }
+            Console.WriteLine("PopulateCardGridBoxWithBlankImages: tworze wiersze");
             for (int i = 0; i < numberOfRows; i++)
             {
+                //cardsGridView.Rows.Add();
                 Image[] imagesInRow = new Image[numberOfColumns];
                 for (int j = 0; j < numberOfColumns; j++)
                     if (cells[i, j] >= 0)
                         imagesInRow[j] = blankImage;
-                cardsGridView.Rows.Add(imagesInRow);
+                Console.WriteLine("Iteracja wierszy: " + i + ", Dodaje: " + imagesInRow.Length + " obrazkow");
+                try
+                {
+                    Console.WriteLine(cardsGridView.Rows.Add(imagesInRow));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Exception when adding rows to card grid view: " + ex.Message);
+                }
             }
+            Console.WriteLine("Wypełniłem grid box pustymi obrazkami");
+            if (cardGrdiBoxThread != null && cardGrdiBoxThread.IsAlive)
+                cardGrdiBoxThread.Abort();
+        }
+        protected void DebugLastRowInGridBoxWithBlankImages()
+        {
+            //cardsGridView.Rows.Add();
+            if (cardGrdiBoxThread != null && cardGrdiBoxThread.IsAlive)
+                cardGrdiBoxThread.Join();
+            Image[] imagesInRow = new Image[numberOfColumns];
+            for (int j = 0; j < numberOfColumns; j++)
+                if (cells[numberOfRows, j] >= 0)
+                    imagesInRow[j] = blankImage;
+            Console.WriteLine("Iteracja wierszy: " + numberOfRows + ", Dodaje: " + imagesInRow.Length + " obrazkow");
+            try
+            {
+                Console.WriteLine(cardsGridView.Rows.Add(imagesInRow));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Exception when adding rows to card grid view: " + ex.Message);
+            }
+            if (cardGrdiBoxThread != null && cardGrdiBoxThread.IsAlive)
+                cardGrdiBoxThread.Abort();
         }
         protected void UpdateCardGridBox()
         {
@@ -156,25 +248,25 @@ namespace Memory
             }
             if (numberOfColumns < 1 || numberOfRows < 1)
             {
-                Console.WriteLine("Inicjalizuje gridBox, poniewaz ilosc kolumn wynosi {0}, lub ilosc wierszy wynosi {0}",numberOfColumns,numberOfRows);
+                Console.WriteLine("Inicjalizuje gridBox, poniewaz ilosc kolumn wynosi {0}, lub ilosc wierszy wynosi {0}", numberOfColumns, numberOfRows);
                 InitPopulateCellsByGameInfo();
             }
-            if(!(gameInfo.cells is null))
+            if (!(gameInfo.cells is null))
             {
                 Console.WriteLine("Aktualizuje tablice cells");
                 cells = gameInfo.cells;
-            } 
+            }
             for (int i = 0; i < numberOfRows; i++)
                 for (int j = 0; j < numberOfColumns; j++)
                     if (cells[i, j] >= 100)
                     {
                         Console.WriteLine("Cells: ");
                         foreach (int cell in cells)
-                            Console.Write(cell +" ");
-                        Console.WriteLine("\n"+cells[i,j]+" - Zdekodowano cell: " + DecodeHittedCard(i,j));
+                            Console.Write(cell + " ");
+                        Console.WriteLine("\n" + cells[i, j] + " - Zdekodowano cell: " + DecodeHittedCard(i, j));
                         ShowSelectedCard(i, j, DecodeHittedCard(i, j));
                     }
-                        
+
 
             //Console.WriteLine("Columns: " + numberOfColumns + " Rows: " + numberOfRows);
         }
@@ -183,7 +275,15 @@ namespace Memory
             if (cells[row, col] < 100)
                 return -1;
             int tmp = cells[row, col] / 100;
-            return  --tmp;
+            return --tmp;
+        }
+
+        private int DecodeHittedCard(int cell)
+        {
+            if (cell < 100)
+                return -1;
+            int tmp = cell / 100;
+            return --tmp;
         }
         private void ShowSelectedCard(int rowId, int colId, int idCard)
         {
@@ -191,12 +291,6 @@ namespace Memory
         }
         protected bool CheckIsItEndOfGame()
         {
-            /*int counter = 0;
-            foreach (int cell in cells)
-                if (IsItHittedCell(cell))
-                    counter++;
-            return counter >= cells.Length;*/
-            //nowa, uproszczona wersja:
             foreach (int cell in cells)
                 if (cell < 100)
                     return false;
@@ -205,12 +299,65 @@ namespace Memory
 
         protected virtual void EndGame()
         {
+            if (isEndOfGame)
+                return;
             gameInfo.currentPlayerConnectId = -1;
             gameInfo.cells = cells;
+            isEndOfGame = true;
+            gameInfo.gameInProgress = false;
             connection.SendGameInfoToAllClients(gameInfo);
             tooltipLabel.Text = "Koniec gry";
             FormFunctions.AppendColoredTextWithTime(richTextBox1, tooltipLabel.Text, Color.Green);
             BlockSelectionInCardsGridView();
+            ShowAllCards();
+        }
+
+        protected void DebugCardGridBox()
+        {
+            //powoduje bledy, a nie je naprawia aktualnie
+            /*
+            if (cells.Length > numberOfColumns + numberOfRows || gameInfo.cells.Length > numberOfColumns+numberOfRows)
+            {
+                Console.WriteLine("Debugowanie CardGridBox'a:\ncells.Length: " + cells.Length + ", gi.cells.length: " + gameInfo.cells.Length + ", col+row: " + numberOfRows + numberOfColumns);
+                InitPopulateCellsByGameInfo();
+                UpdateCardGridBox();
+            }*/
+        }
+
+        protected void DebugCellsArray()
+        {
+            //1. Jesli jedna komorka jest zaznaczona, a druga o takim samym kodzie nie to rowniez ja zaznacza
+            int[,] tmp = cells;
+            foreach (int localCell in tmp)
+                if (localCell > 100)
+                    for (int i = 0; i < numberOfRows; i++)
+                        for (int j = 0; j < numberOfColumns; j++)
+                            if (CoddedValueOfCell(cells[i, j]) == localCell)
+                                CodeHitInCells(i, j);
+            //-------------------------------------------------------------------
+            //2. Przypisuje kod odkrytych obrazkow // blad - klient nie wyswietla tablicy przy starcie, mimo ze jest if (?)
+            /* if (gameInfo.gameInProgress)
+                 for (int i = 0; i < numberOfRows; i++)
+                     for (int j = 0; j < numberOfColumns; j++)
+                         if (cells[i, j] < 100 &&
+                             (Image)this.cardsGridView.Rows[i].Cells[j].Value != blankImage)
+                             CodeHitInCells(i, j);
+             */
+            //odswieza obrazki
+            UpdateCardGridBox();
+        }
+
+        private void ShowAllCards()
+        {
+            //index out of bound
+            Console.WriteLine("Pokazuje wszystkie karty, ilosc rzedow: " + numberOfRows + ", ilosc kolumn: " + numberOfColumns);
+            for (int i = 0; i < numberOfRows; i++)
+                for (int j = 0; j < numberOfColumns; j++)
+                {
+                    if (cells[i, j] < 100)
+                        CodeHitInCells(i, j);
+                    ShowSelectedCard(i, j, DecodeHittedCard(cells[i, j]));
+                }
         }
 
         private bool IsCardAvailableOnThisCell(int rowId1, int colId1, int rowId2, int colId2)
@@ -223,7 +370,7 @@ namespace Memory
             return true;
         }
 
-        private void ShowSelectedCardsForAWhile(int rowId1, int colId1, int rowId2, int colId2, int idCard1, int idCard2, int time)
+        protected void ShowSelectedCardsForAWhile(int rowId1, int colId1, int rowId2, int colId2, int idCard1, int idCard2, int time)
         {
             //Sleep nie dziala, stworzono klase CardFunctions dla zarzadzania watkami i Async, ale jest do poprawy (06.05)
             /*
@@ -231,7 +378,18 @@ namespace Memory
             System.Threading.Thread.Sleep(time);
             HideSelectedCards(rowId1, colId1, rowId2, colId2, idCard1, idCard2);
             */
+            Console.WriteLine("Pokaz na chwile karte...");
+            CardFunctions.UpdateInfo(rowId1, colId1, rowId2, colId2, idCard1, idCard2, cardsGridView, gameInfo);
+            /*Task task */
+            _ = CardFunctions.ShowSelectedCardsForAWhile(1000);
+            //task.Wait();
+        }
 
+        protected void ShowSelectedCardsForAWhile(GameInfo gi, int time)
+        {
+            Console.WriteLine("Pokaz karte o parametrach: \nr1: {0}, r2: {0}, c1: {0}, c2: {0}, id1: {0}, id2: {0}", gi.rowId1, gi.rowId2, gi.colId1, gi.colId2, gi.idCard1, gi.idCard2);
+            CardFunctions.UpdateInfo(gi.rowId1, gi.colId1, gi.rowId2, gi.colId2, gi.idCard1, gi.idCard2, cardsGridView, gi);
+            _ = CardFunctions.ShowSelectedCardsForAWhile(1000);
         }
         private void ShowSelectedCards(int rowId1, int colId1, int rowId2, int colId2, int idCard1, int idCard2)
         {
@@ -268,8 +426,16 @@ namespace Memory
         {
             if (cells[row, col] >= 100)
                 return;
-            cells[row, col]++; 
+            cells[row, col]++;
             cells[row, col] *= 100;
+        }
+
+        private int CoddedValueOfCell(int cell)
+        {
+            if (cell >= 100)
+                return cell;
+            cell++;
+            return cell *= 100;
         }
 
         private bool IsItHittedCell(int row, int col)
@@ -284,9 +450,17 @@ namespace Memory
 
         protected virtual void BadChoice(int rowId1, int colId1, int rowId2, int colId2, int idCard1, int idCard2)
         {
-            ShowSelectedCardsForAWhile(rowId1, colId1, rowId2, colId2, idCard1, idCard2, 1000);
             tooltipLabel.Text = "Ruch: Nie trafiłeś! Tracisz turę.";
             FormFunctions.AppendColoredTextWithTime(richTextBox1, tooltipLabel.Text, Color.Red);
+
+            ShowSelectedCardsForAWhile(rowId1, colId1, rowId2, colId2, idCard1, idCard2, 1000);
+            gameInfo.rowId1 = rowId1;
+            gameInfo.rowId2 = rowId2;
+            gameInfo.colId1 = colId1;
+            gameInfo.colId2 = colId2;
+            gameInfo.idCard1 = idCard1;
+            gameInfo.idCard2 = idCard2;
+
             EndMyTurn();
         }
         /*
@@ -310,7 +484,7 @@ namespace Memory
                 GoodChoice(rowId1, colId1, rowId2, colId2, idCard1, idCard2);
             else
                 BadChoice(rowId1, colId1, rowId2, colId2, idCard1, idCard2);
-            
+
         }
         private void AddPoints()
         {
@@ -338,6 +512,7 @@ namespace Memory
                 else
                     this.tooltipLabel.Text = "Tooltip: Spróbuj zaznaczyć inne karty, możesz użyć do tego CTRL";
             }
+
         }
 
         protected void Form2_FormClosed(object sender, FormClosedEventArgs e)
@@ -379,6 +554,7 @@ namespace Memory
             if (FormFunctions.autoScroll)
                 this.richTextBox1.ScrollToCaret();
         }
+
 
         protected void richTextBox1_TextChanged(object sender, EventArgs e)
         {
