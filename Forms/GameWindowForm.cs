@@ -14,12 +14,13 @@ using System.IO;
 using memory_game.Connection;
 using memory_game.Forms;
 using memory_game.Connection.Messages;
+using System.Threading;
 
 namespace Memory
 {
     public partial class GameWindowForm : Form
     {
-        protected System.Threading.Thread populatingGridBoxThread;
+        protected System.Threading.Thread cardGrdiBoxThread;
         protected Connect connection;
         protected GameInfo gameInfo;
         protected int[,] cells;
@@ -28,6 +29,7 @@ namespace Memory
         private int myScore;
         private bool isEndOfGame;
         private Image blankImage;
+        private List<string> playersList;
 
         public int[,] Cells
         {
@@ -42,6 +44,7 @@ namespace Memory
 
         public GameWindowForm(Connect connection)
         {
+            playersList = new List<string>();
             myId = -256;
             gameInfo = new GameInfo();
             gameInfo.gameInProgress = false;
@@ -67,10 +70,35 @@ namespace Memory
 
         public virtual void Con_GameInfoReceived(object sender, GameInfoEventArgs e)
         {
-            if (populatingGridBoxThread != null && populatingGridBoxThread.IsAlive)
-                populatingGridBoxThread.Join();
-            if (e.gameInfo.ResponseEnum == ConnectionEnums.ResponseEnum.InitInfoSent)
+            try
+            {
+                Console.WriteLine("Otrzymalem id = " + e.gameInfo.currentPlayerConnectId);
+                int itemToSelect = e.gameInfo.currentPlayerConnectId;
+                if (itemToSelect == 0)
+                    itemToSelect = e.gameInfo.rowId2;
+                else if (itemToSelect < 0)
+                    itemToSelect = -itemToSelect;
+                Console.WriteLine("Do zaznaczenia na liscie graczy: " + itemToSelect);
+                /*for (int i = 0; i <= playerListBox.Items.Count-1; i++)
+                    if(itemToSelect != i)
+                        playerListBox.SetSelected(i, false);
+                    else*/
+                playerListBox.SetSelected(--itemToSelect, true);
+            }
+            catch (Exception exc)
+            {
+                Console.WriteLine("Exception przy oznaczaniu gracza: " + exc.Message);
+            }
+            if (cardsGridView.Rows.Count < numberOfRows)
+                new Thread(new ThreadStart(DebugLastRowInGridBoxWithBlankImages));
+            if (cardGrdiBoxThread != null && cardGrdiBoxThread.IsAlive)
+                cardGrdiBoxThread.Join();
+            if (e.gameInfo.ResponseEnum == ConnectionEnums.ResponseEnum.InitInfoSent && myId < -200)
+            {
                 myId = e.gameInfo.myId;
+                myIdInfo.Text = "Moje ID: " + myId.ToString();
+                FillPlayersList(e.gameInfo.rowId1);
+            }
             if (isEndOfGame)
                 return;
             if (!e.gameInfo.gameInProgress)
@@ -79,16 +107,26 @@ namespace Memory
             UpdateCardGridBox();
             DebugCellsArray();
             System.Threading.Thread.Sleep(5);
+            
             //if (e.connectionId > 0)
             //    FormFunctions.AppendColoredTextWithTime(richTextBox1, e.connectionId.ToString() + " - utrata ruchu", Color.Orange);
 
-            /*Console.WriteLine("czy to moje ID?: " + connection.IsItMyId(e.connectionId));
-            Console.WriteLine("czy 1 to moje ID?: " + connection.IsItMyId(1L));
-            Console.WriteLine("czy 2 to moje ID?: " + connection.IsItMyId(2L));*/
-            //Console.WriteLine("Z klasy connect: " + connection.getConnectId());
+                /*Console.WriteLine("czy to moje ID?: " + connection.IsItMyId(e.connectionId));
+                Console.WriteLine("czy 1 to moje ID?: " + connection.IsItMyId(1L));
+                Console.WriteLine("czy 2 to moje ID?: " + connection.IsItMyId(2L));*/
+                //Console.WriteLine("Z klasy connect: " + connection.getConnectId());
         }
 
-
+        protected void FillPlayersList(int maxId)
+        {
+            if (playerListBox.Items.Count > 0)
+                return;
+            for(int i = 1; i <= maxId+1; i++)
+            {
+                playersList.Add("Player " + i);
+                playerListBox.Items.Add("Player " + i);
+            }
+        }
         protected void Form2_Load(object sender, EventArgs e)
         {
             this.cardsGridView.ClearSelection();
@@ -160,7 +198,8 @@ namespace Memory
             }
             Console.WriteLine("PopulateCardGridBoxWithBlankImages: tworze wiersze");
             for (int i = 0; i < numberOfRows; i++)
-            { 
+            {
+                //cardsGridView.Rows.Add();
                 Image[] imagesInRow = new Image[numberOfColumns];
                 for (int j = 0; j < numberOfColumns; j++)
                     if (cells[i, j] >= 0)
@@ -176,8 +215,29 @@ namespace Memory
                 }
             }
             Console.WriteLine("Wypełniłem grid box pustymi obrazkami");
-            if (populatingGridBoxThread != null && populatingGridBoxThread.IsAlive)
-                populatingGridBoxThread.Abort();
+            if (cardGrdiBoxThread != null && cardGrdiBoxThread.IsAlive)
+                cardGrdiBoxThread.Abort();
+        }
+        protected void DebugLastRowInGridBoxWithBlankImages()
+        {
+            //cardsGridView.Rows.Add();
+            if (cardGrdiBoxThread != null && cardGrdiBoxThread.IsAlive)
+                cardGrdiBoxThread.Join();
+            Image[] imagesInRow = new Image[numberOfColumns];
+            for (int j = 0; j < numberOfColumns; j++)
+                if (cells[numberOfRows, j] >= 0)
+                    imagesInRow[j] = blankImage;
+            Console.WriteLine("Iteracja wierszy: " + numberOfRows + ", Dodaje: " + imagesInRow.Length + " obrazkow");
+            try
+            {
+                Console.WriteLine(cardsGridView.Rows.Add(imagesInRow));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Exception when adding rows to card grid view: " + ex.Message);
+            }
+            if (cardGrdiBoxThread != null && cardGrdiBoxThread.IsAlive)
+                cardGrdiBoxThread.Abort();
         }
         protected void UpdateCardGridBox()
         {
@@ -276,13 +336,13 @@ namespace Memory
                                 CodeHitInCells(i, j);
             //-------------------------------------------------------------------
             //2. Przypisuje kod odkrytych obrazkow // blad - klient nie wyswietla tablicy przy starcie, mimo ze jest if (?)
-           /* if (gameInfo.gameInProgress)
-                for (int i = 0; i < numberOfRows; i++)
-                    for (int j = 0; j < numberOfColumns; j++)
-                        if (cells[i, j] < 100 &&
-                            (Image)this.cardsGridView.Rows[i].Cells[j].Value != blankImage)
-                            CodeHitInCells(i, j);
-            */
+            /* if (gameInfo.gameInProgress)
+                 for (int i = 0; i < numberOfRows; i++)
+                     for (int j = 0; j < numberOfColumns; j++)
+                         if (cells[i, j] < 100 &&
+                             (Image)this.cardsGridView.Rows[i].Cells[j].Value != blankImage)
+                             CodeHitInCells(i, j);
+             */
             //odswieza obrazki
             UpdateCardGridBox();
         }
@@ -298,7 +358,6 @@ namespace Memory
                         CodeHitInCells(i, j);
                     ShowSelectedCard(i, j, DecodeHittedCard(cells[i, j]));
                 }
-
         }
 
         private bool IsCardAvailableOnThisCell(int rowId1, int colId1, int rowId2, int colId2)
@@ -331,7 +390,6 @@ namespace Memory
             Console.WriteLine("Pokaz karte o parametrach: \nr1: {0}, r2: {0}, c1: {0}, c2: {0}, id1: {0}, id2: {0}", gi.rowId1, gi.rowId2, gi.colId1, gi.colId2, gi.idCard1, gi.idCard2);
             CardFunctions.UpdateInfo(gi.rowId1, gi.colId1, gi.rowId2, gi.colId2, gi.idCard1, gi.idCard2, cardsGridView, gi);
             _ = CardFunctions.ShowSelectedCardsForAWhile(1000);
-            // task.Wait();
         }
         private void ShowSelectedCards(int rowId1, int colId1, int rowId2, int colId2, int idCard1, int idCard2)
         {
@@ -402,7 +460,7 @@ namespace Memory
             gameInfo.colId2 = colId2;
             gameInfo.idCard1 = idCard1;
             gameInfo.idCard2 = idCard2;
-    
+
             EndMyTurn();
         }
         /*
@@ -440,8 +498,6 @@ namespace Memory
         protected void cardsGridView_SelectionChanged(object sender, EventArgs e)
         {
             //max 2 cells selected
-            /*if (populatingGridBoxThread != null && populatingGridBoxThread.IsAlive)
-                populatingGridBoxThread.Join();*/
             if (this.cardsGridView.SelectedCells.Count >= 2)
             {
                 int colId1 = this.cardsGridView.SelectedCells[0].ColumnIndex, colId2 = this.cardsGridView.SelectedCells[1].ColumnIndex;
@@ -456,6 +512,7 @@ namespace Memory
                 else
                     this.tooltipLabel.Text = "Tooltip: Spróbuj zaznaczyć inne karty, możesz użyć do tego CTRL";
             }
+
         }
 
         protected void Form2_FormClosed(object sender, FormClosedEventArgs e)
@@ -497,6 +554,7 @@ namespace Memory
             if (FormFunctions.autoScroll)
                 this.richTextBox1.ScrollToCaret();
         }
+
 
         protected void richTextBox1_TextChanged(object sender, EventArgs e)
         {

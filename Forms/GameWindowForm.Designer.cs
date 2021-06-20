@@ -1,4 +1,6 @@
-﻿namespace Memory
+﻿using System;
+
+namespace Memory
 {
     partial class GameWindowForm
     {
@@ -38,14 +40,12 @@
             this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.scoreLabel = new System.Windows.Forms.Label();
-            this.pictureBox1 = new System.Windows.Forms.PictureBox();
-            this.pictureBox2 = new System.Windows.Forms.PictureBox();
-            this.label6 = new System.Windows.Forms.Label();
+            this.myIdInfo = new System.Windows.Forms.Label();
             this.tooltipLabel = new System.Windows.Forms.Label();
             this.cardsGridView = new System.Windows.Forms.DataGridView();
             this.autoScrollRtb1Button = new System.Windows.Forms.Button();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
+            this.playerListLabel = new System.Windows.Forms.Label();
+            this.playerListBox = new System.Windows.Forms.ListBox();
             ((System.ComponentModel.ISupportInitialize)(this.cardsGridView)).BeginInit();
             this.SuspendLayout();
             // 
@@ -144,30 +144,14 @@
             this.scoreLabel.TabIndex = 15;
             this.scoreLabel.Text = "0";
             // 
-            // pictureBox1
+            // myIdInfo
             // 
-            this.pictureBox1.Location = new System.Drawing.Point(1054, 49);
-            this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(118, 105);
-            this.pictureBox1.TabIndex = 16;
-            this.pictureBox1.TabStop = false;
-            // 
-            // pictureBox2
-            // 
-            this.pictureBox2.Location = new System.Drawing.Point(1054, 206);
-            this.pictureBox2.Name = "pictureBox2";
-            this.pictureBox2.Size = new System.Drawing.Size(118, 109);
-            this.pictureBox2.TabIndex = 17;
-            this.pictureBox2.TabStop = false;
-            // 
-            // label6
-            // 
-            this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(1054, 13);
-            this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(103, 13);
-            this.label6.TabIndex = 18;
-            this.label6.Text = "Zaznaczone obrazki";
+            this.myIdInfo.AutoSize = true;
+            this.myIdInfo.Location = new System.Drawing.Point(1060, 25);
+            this.myIdInfo.Name = "myIdInfo";
+            this.myIdInfo.Size = new System.Drawing.Size(134, 13);
+            this.myIdInfo.TabIndex = 18;
+            this.myIdInfo.Text = "Jeszcze nie przydzielono id";
             // 
             // tooltipLabel
             // 
@@ -212,17 +196,36 @@
             this.autoScrollRtb1Button.UseVisualStyleBackColor = true;
             this.autoScrollRtb1Button.Click += new System.EventHandler(this.autoScrollRtb1Button_Click);
             // 
+            // playerListLabel
+            // 
+            this.playerListLabel.AutoSize = true;
+            this.playerListLabel.Location = new System.Drawing.Point(1060, 80);
+            this.playerListLabel.Name = "playerListLabel";
+            this.playerListLabel.Size = new System.Drawing.Size(66, 13);
+            this.playerListLabel.TabIndex = 22;
+            this.playerListLabel.Text = "Lista graczy:";
+            // 
+            // playerList
+            // 
+            this.playerListBox.FormattingEnabled = true;
+            this.playerListBox.Location = new System.Drawing.Point(1063, 96);
+            this.playerListBox.Name = "playerList";
+            this.playerListBox.Size = new System.Drawing.Size(120, 407);
+            this.playerListBox.TabIndex = 23;
+            this.playerListBox.Click += new System.EventHandler(this.playerListBox_Click);
+            this.playerListBox.DoubleClick += new System.EventHandler(this.playerListBox_Click);            
+            // 
             // GameWindowForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1269, 563);
+            this.Controls.Add(this.playerListBox);
+            this.Controls.Add(this.playerListLabel);
             this.Controls.Add(this.autoScrollRtb1Button);
             this.Controls.Add(this.cardsGridView);
             this.Controls.Add(this.tooltipLabel);
-            this.Controls.Add(this.label6);
-            this.Controls.Add(this.pictureBox2);
-            this.Controls.Add(this.pictureBox1);
+            this.Controls.Add(this.myIdInfo);
             this.Controls.Add(this.scoreLabel);
             this.Controls.Add(this.textBox1);
             this.Controls.Add(this.richTextBox1);
@@ -237,12 +240,15 @@
             this.Text = "Memory game";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.Form2_FormClosed);
             this.Load += new System.EventHandler(this.Form2_Load);
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.cardsGridView)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
+        }
+
+        private void playerListBox_Click(object sender, EventArgs e)
+        {
+            //do nothing
         }
 
         #endregion
@@ -257,11 +263,11 @@
         protected System.Windows.Forms.RichTextBox richTextBox1;
         protected System.Windows.Forms.TextBox textBox1;
         protected System.Windows.Forms.Label scoreLabel;
-        protected System.Windows.Forms.PictureBox pictureBox1;
-        protected System.Windows.Forms.PictureBox pictureBox2;
-        protected System.Windows.Forms.Label label6;
+        protected System.Windows.Forms.Label myIdInfo;
         protected System.Windows.Forms.Label tooltipLabel;
         protected System.Windows.Forms.DataGridView cardsGridView;
         protected System.Windows.Forms.Button autoScrollRtb1Button;
+        private System.Windows.Forms.Label playerListLabel;
+        protected System.Windows.Forms.ListBox playerListBox;
     }
 }

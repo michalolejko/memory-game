@@ -16,6 +16,7 @@ namespace Memory
         private CancellationTokenSource responseSource;
         public GameWindowServerForm(Connect connection, GameInfo gameInfo) : base(connection)
         {
+            Console.WriteLine("____________________SERWER____________________\n");
             //con.KomunikatPrzybyl += new Connect.KomunikatEventsHandler(pol_KomunikatPrzybyl);
             /* connection.GameInfoReceived += new Connect.GameInfoReceivedEventsHandler(Con_GameInfoReceived);
              connection.successfullyConnected += new Connect.SuccessfullyConnectedEventsHandler(Con_SuccessfullyConnected);
@@ -37,22 +38,22 @@ namespace Memory
             //jesli jest zerem to serwer otrzymal response
             if (e.gameInfo.currentPlayerConnectId == 0)
             {
+                Console.WriteLine("Serwer otrzymal response");
                 //klient otrzymal info, ze teraz jego tura
-                if(e.gameInfo.ResponseEnum == ConnectionEnums.ResponseEnum.MyTurn)
+                if (e.gameInfo.ResponseEnum == ConnectionEnums.ResponseEnum.MyTurn)
                 {
                     responseSource.Cancel();
                     Console.WriteLine("Klient o id " + e.gameInfo.myId + " otrzymał info, o swojej turze");
                 }
                 //potwierdzenie, ze klient otrzymal init info
-                Console.WriteLine("Serwer otrzymal response");
-                if(e.gameInfo.ResponseEnum == ConnectionEnums.ResponseEnum.InitInfoReceived)
+                if (e.gameInfo.ResponseEnum == ConnectionEnums.ResponseEnum.InitInfoReceived)
                 {
                     Console.WriteLine("Otrzymalem init response od id = " + e.gameInfo.myId);
                     if (e.gameInfo.cells != gameInfo.cells)
                     {
                         Console.WriteLine("Wysylam ponownie informacje do klienta o id: " + e.gameInfo.myId);
                         connection.SendGameInfoToPlayerById(connection.gameInfo, (int)e.gameInfo.myId);
-                    }        
+                    }
                 }
             }
             else
@@ -69,28 +70,48 @@ namespace Memory
                     //jesli nastepna tura zwraca 1 to znaczy, ze teraz tura serwera
                     int nextTurnId = connection.NextTurn(gameInfo);
                     if (gameInfo.gameInProgress && nextTurnId == 1)
+                    {
+                        Console.WriteLine("-");
                         StartMyTurn();
+                    }
                     else
                     {
+                        Console.WriteLine("Tworze responseTask oczekujacy na potwierdzenie tury klienta o id " + nextTurnId);
                         int counter = 1;
-                        TryAgain:
+                        // TryItAgain:
                         responseSource = new CancellationTokenSource();
                         responseTask = Task.Run(async delegate
                         {
                             await Task.Delay(2000, responseSource.Token);
                         });
-                        if (!responseTask.IsCanceled && counter < 10)
+                        try
                         {
-                            Console.WriteLine("Klient nie odebral info o swojej turze, probuje " + ++counter + " raz");
-                            connection.SendGameInfoToPlayerById(gameInfo, nextTurnId);
-                            goto TryAgain;
+                            responseTask.Wait();
+                            if (!responseTask.IsCanceled && counter < 10)
+                            {
+                                counter++;
+                                Console.WriteLine("Klient nie odebral info o swojej turze, probuje " + counter + " raz");
+                                connection.SendGameInfoToPlayerById(gameInfo, nextTurnId);
+                                //goto TryItAgain;
+                            }
+                            if (responseTask.IsCanceled || responseSource.IsCancellationRequested)
+                            {
+                                responseSource = null;
+                                responseTask = null;
+                            }
                         }
-                            
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine("responseTask exception msg: " + ex.Message);
+                            responseSource = null;
+                            responseTask = null;
+                        }
                     }
                 }
                 //jesli ID dodatnie - trafil, poinformuj reszte klientow 
                 else if (gameInfo.currentPlayerConnectId > 0)
                 {
+                    Console.WriteLine("Klient o id '" + gameInfo.myId + "' trafil");
                     gameInfo.currentPlayerConnectId = -gameInfo.currentPlayerConnectId;
                     connection.SendGameInfoToAllClients();
                 }
@@ -112,6 +133,7 @@ namespace Memory
         {
             gameInfo.currentPlayerConnectId = 1;
             base.GoodChoice(rowId1, colId1, rowId2, colId2, idCard1, idCard2);
+            
         }
         private void GameWindowServerForm_Load(object sender, EventArgs e)
         {
@@ -122,8 +144,12 @@ namespace Memory
         {
             gameInfo.gameInProgress = true;
             gameInfo.ResponseEnum = ConnectionEnums.ResponseEnum.InitInfoSent;
-            if (connection.TryStartGameAsServer(gameInfo) == 1)
+            int nextTurnId = connection.TryStartGameAsServer(gameInfo);
+            if (nextTurnId == 1)
                 StartMyTurn();
+            myIdInfo.Text = "Moje ID: 1";
+            FillPlayersList(connection.GetNumberOfPlayers());
+            playerListBox.SetSelected(--nextTurnId, true);
             this.startGameButton.Text = "Rozpoczęto";
             this.startGameButton.Enabled = false;
             FormFunctions.AppendColoredTextWithTime(richTextBox1, "Gra rozpoczęta", Color.Green);

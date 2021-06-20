@@ -218,6 +218,11 @@ namespace memory_game.Connection
         public int TryStartGameAsServer(GameInfo msg)
         {
             msg.currentPlayerConnectId = 0;
+            int randomClientId = new Random().Next(1, clientsList.Count + 2);
+            if (clientsList.Count != 0 && randomClientId < 2)
+                randomClientId++;
+            msg.rowId2 = randomClientId;
+            msg.rowId1 = GetNumberOfPlayers();
             SendGameInfoToAllClients(msg);
             gameInfo = msg;
             //tutaj powinno byc czekaj na odpowiedz i kontynuuj
@@ -228,11 +233,9 @@ namespace memory_game.Connection
             {
                 Console.WriteLine("AggregateException w tasku czekajacym na odpowiedz klientow");
             }*/
-
-            int randomClientId = new Random().Next(1, clientsList.Count + 2);
             //jesli zaczyna serwer to byly problemy - ponizszy if zabezpiecza przed rozpoczynaniem gry przez serwer
-            if (clientsList.Count != 0 && randomClientId < 2)
-                randomClientId++;
+            
+            Thread.Sleep(5);
             //-----------------------------------------------------------------------------------------------------
             if (randomClientId > 1)
                 SendGameInfoToPlayerById(msg, randomClientId);

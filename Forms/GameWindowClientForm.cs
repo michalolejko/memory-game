@@ -14,6 +14,7 @@ namespace Memory
         public GameWindowClientForm(Connect connection) : base(connection)
         {
             //InitializeComponent();
+            Console.WriteLine("____________________KLIENT____________________\n");
             base.EndMyTurn();
             cardsGridView.ClearSelection();
             if (TryDownloadGameInfo())
@@ -53,7 +54,7 @@ namespace Memory
             tmp.currentPlayerConnectId = 0;
             tmp.myId = myId;
             connection.SendMessageToServer(tmp);
-            Console.WriteLine("Wysłałem init response do serwera");
+            Console.WriteLine("Wysłałem init response do serwera\nMoje Id: " + myId);
         }
         public override void Con_GameInfoReceived(object sender, GameInfoEventArgs e)
         {
@@ -69,8 +70,8 @@ namespace Memory
                 FormFunctions.AppendColoredTextWithTime(richTextBox1, "Gra rozpoczęta", Color.Green);
                 Console.WriteLine("Gra rozpoczęta");
                 SendResponseThatYouGotInitInfo();
-                populatingGridBoxThread = new Thread(new ThreadStart(PopulateCardGridBoxWithBlankImages));
-                populatingGridBoxThread.Start();
+                cardGrdiBoxThread = new Thread(new ThreadStart(PopulateCardGridBoxWithBlankImages));
+                cardGrdiBoxThread.Start();
                 //PopulateCardGridBoxWithBlankImages();
             }
             //jesli ujemna to nie moj ruch - aktualizuj (wywolywane z base) + sprawdz czy to nie jest koniec + wyswietl na chwile karty
@@ -108,6 +109,14 @@ namespace Memory
             }*/
         }
 
+        protected override void GoodChoice(int rowId1, int colId1, int rowId2, int colId2, int idCard1, int idCard2)
+        {  
+            if (gameInfo.currentPlayerConnectId == 0)
+                gameInfo.currentPlayerConnectId = (int)myId;
+            if (gameInfo.currentPlayerConnectId < 0)
+                gameInfo.currentPlayerConnectId = -gameInfo.currentPlayerConnectId;
+            base.GoodChoice(rowId1, colId1, rowId2, colId2, idCard1, idCard2);
+        }
         protected override void EndMyTurn()
         {
             base.EndMyTurn();
