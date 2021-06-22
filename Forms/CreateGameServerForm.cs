@@ -39,8 +39,21 @@ namespace Memory
         protected override void startGameButton_Click(object sender, EventArgs e)
         {
             //Game.StartGame(initGameInfo, this);//zastanowic sie jak z tym game - czy raczej server i client uzywac
+            GameWindowServerForm gameWindowServer;
 
-            FormManager.NewWindow(this, new GameWindowServerForm(connection, gameInfo));
+            if (easyDiffLvlButton.Checked)
+                gameWindowServer = new GameWindowServerForm(connection, gameInfo, GameDifficulty.Easy);
+            else if (mediumDiffLvlButton.Checked)
+                gameWindowServer = new GameWindowServerForm(connection, gameInfo, GameDifficulty.Medium);
+            else if (hardDiffLvlButton.Checked)
+                gameWindowServer = new GameWindowServerForm(connection, gameInfo, GameDifficulty.Hard);
+            else
+            {
+                gameWindowServer = new GameWindowServerForm(connection, gameInfo, GameDifficulty.Custom);
+                gameWindowServer.SetCustomDifficultyTime(Int32.Parse(customDiffTimeTextBox.Text));
+            }
+
+            FormManager.NewWindow(this, gameWindowServer);
         }
 
         private GameInfo TakeInitGameInfo()
@@ -117,7 +130,17 @@ namespace Memory
 
         private void Any_SelectedIndexChanged(Object sender, EventArgs e)
         {
-            CheckIfGameCanBeStarted();
+            if (customDiffLvlButton.Checked)
+            {
+                customDiffTimeTextBox.Visible = true;
+                customDiffTimeLabel.Visible = true;
+            }
+            else
+            {
+                customDiffTimeTextBox.Visible = false;
+                customDiffTimeLabel.Visible = false;
+            }
+
         }
 
         private void PopulateDecksListBox()
@@ -133,7 +156,7 @@ namespace Memory
         private bool IsDeckLoaded()
         {
             //if isnt loaded
-            if (this.deck == null || this.deck.name == "") 
+            if (this.deck == null || this.deck.name == "")
             {
                 this.deck = new Deck();
                 return false;
@@ -150,7 +173,7 @@ namespace Memory
             else if (!(decksListBox.Items.Count > 0))
                 BlockStartGame("Wgraj talie");
             else
-                UnlockStartGame("Możesz rozpocząć grę"); 
+                UnlockStartGame("Możesz rozpocząć grę");
         }
     }
 }

@@ -16,7 +16,8 @@
             this.decksListBox = new System.Windows.Forms.ListBox();
             this.uploadOwnDeckButton = new System.Windows.Forms.Button();
             this.createServerButton = new System.Windows.Forms.Button();
-            
+            this.customDiffTimeTextBox = new System.Windows.Forms.TextBox();
+            this.customDiffTimeLabel = new System.Windows.Forms.Label();
             this.gameModeGroupBox.SuspendLayout();
             this.difficultyLevelGroupBox.SuspendLayout();
             this.SuspendLayout();
@@ -58,6 +59,8 @@
             // 
             // difficultyLevelGroupBox
             // 
+            this.difficultyLevelGroupBox.Controls.Add(this.customDiffTimeLabel);
+            this.difficultyLevelGroupBox.Controls.Add(this.customDiffTimeTextBox);
             this.difficultyLevelGroupBox.Controls.Add(this.customDiffLvlButton);
             this.difficultyLevelGroupBox.Controls.Add(this.hardDiffLvlButton);
             this.difficultyLevelGroupBox.Controls.Add(this.mediumDiffLvlButton);
@@ -145,14 +148,30 @@
             this.createServerButton.Text = "Utwórz serwer";
             this.createServerButton.UseVisualStyleBackColor = true;
             this.createServerButton.Click += new System.EventHandler(this.createServerButton_Click);
-
+            // 
+            // customDiffTimeLabelTextBox
+            // 
+            this.customDiffTimeTextBox.Location = new System.Drawing.Point(18, 206);
+            this.customDiffTimeTextBox.Name = "customDiffTimeLabelTextBox";
+            this.customDiffTimeTextBox.Size = new System.Drawing.Size(100, 20);
+            this.customDiffTimeTextBox.TabIndex = 7;
+            this.customDiffTimeTextBox.Visible = false;
+            this.customDiffTimeTextBox.Text = "1000";
+            // 
+            // customDiffTimeLabel
+            // 
+            this.customDiffTimeLabel.AutoSize = true;
+            this.customDiffTimeLabel.Location = new System.Drawing.Point(18, 191);
+            this.customDiffTimeLabel.Name = "customDiffTimeLabel";
+            this.customDiffTimeLabel.Size = new System.Drawing.Size(35, 13);
+            this.customDiffTimeLabel.TabIndex = 8;
+            this.customDiffTimeLabel.Text = "Czas wyświetlania kart [ms]:";
             // 
             // CreateGameServerForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
-            
             this.Controls.Add(this.createServerButton);
             this.Controls.Add(this.uploadOwnDeckButton);
             this.Controls.Add(this.decksListBox);
@@ -160,6 +179,7 @@
             this.Controls.Add(this.gameModeGroupBox);
             this.Name = "CreateGameServerForm";
             this.Load += new System.EventHandler(this.CreateGameServerForm_Load);
+            this.Controls.SetChildIndex(this.tooltipLabel, 0);
             this.Controls.SetChildIndex(this.backButton, 0);
             this.Controls.SetChildIndex(this.portTextBox, 0);
             this.Controls.SetChildIndex(this.addressTextBox, 0);
@@ -170,7 +190,7 @@
             this.Controls.SetChildIndex(this.decksListBox, 0);
             this.Controls.SetChildIndex(this.startGameButton, 0);
             this.Controls.SetChildIndex(this.uploadOwnDeckButton, 0);
-            this.Controls.SetChildIndex(this.createServerButton, 0);          
+            this.Controls.SetChildIndex(this.createServerButton, 0);
             this.Controls.SetChildIndex(this.infoTextBox, 0);
             this.gameModeGroupBox.ResumeLayout(false);
             this.gameModeGroupBox.PerformLayout();
@@ -194,6 +214,8 @@
         private System.Windows.Forms.ListBox decksListBox;
         private System.Windows.Forms.Button uploadOwnDeckButton;
         private System.Windows.Forms.Button createServerButton;
+        private System.Windows.Forms.Label customDiffTimeLabel;
+        private System.Windows.Forms.TextBox customDiffTimeTextBox;
         //private System.Windows.Forms.Label tooltipLabel;
     }
 }

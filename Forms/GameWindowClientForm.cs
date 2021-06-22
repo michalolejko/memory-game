@@ -66,6 +66,30 @@ namespace Memory
             //0 = inicjalizacja gry
             if (gameInfo.currentPlayerConnectId == 0)
             {
+                gameDifficulty = gameInfo.GameDifficulty;
+                switch (gameDifficulty)
+                {
+                    case ConnectionEnums.GameDifficulty.Easy:
+                        {
+                            displayTimeOfCards = 1000;
+                            break;
+                        }
+                    case ConnectionEnums.GameDifficulty.Medium:
+                        {
+                            displayTimeOfCards = 2000;
+                            break;
+                        }
+                    case ConnectionEnums.GameDifficulty.Hard:
+                        {
+                            displayTimeOfCards = 3000;
+                            break;
+                        }
+                    case ConnectionEnums.GameDifficulty.Custom:
+                        {
+                            displayTimeOfCards = e.gameInfo.colId2;
+                            break;
+                        }
+                }
                 InitPopulateCellsByGameInfo();
                 FormFunctions.AppendColoredTextWithTime(richTextBox1, "Gra rozpoczęta", Color.Green);
                 Console.WriteLine("Gra rozpoczęta");
@@ -82,7 +106,7 @@ namespace Memory
                 else 
                 {
                     Console.WriteLine("Pokazuje na chwile karty");
-                    ShowSelectedCardsForAWhile(gameInfo, 1000);
+                    ShowSelectedCardsForAWhile(gameInfo, displayTimeOfCards);
                 } 
             }
             //jesli dodatnia - moj ruch (id = 1 to zawsze serwer)

@@ -238,8 +238,10 @@ namespace memory_game.Connection
             int randomClientId = new Random().Next(1, clientsList.Count + 2);
             if (clientsList.Count != 0 && randomClientId < 2)
                 randomClientId++;
+            if (randomClientId <= 1)
+                randomClientId = 1;
             msg.rowId2 = randomClientId;
-            msg.rowId1 = GetNumberOfPlayers();
+            msg.rowId1 = GetNumberOfClients();
             SendGameInfoToAllClients(msg);
             gameInfo = msg;
             //tutaj powinno byc czekaj na odpowiedz i kontynuuj
@@ -257,6 +259,7 @@ namespace memory_game.Connection
             if (randomClientId > 1)
                 SendGameInfoToPlayerById(msg, randomClientId);
             Console.WriteLine("Zaczyna gracz o id " + randomClientId);
+
             return randomClientId;
         }
 
@@ -279,10 +282,12 @@ namespace memory_game.Connection
                 SendGameInfoToPlayerById(msg);
                 return 0;
             }
+            else
+                msg.currentPlayerConnectId = 1;
             return msg.currentPlayerConnectId;
         }
 
-        public int GetNumberOfPlayers() { return clientsList.Count;  }
+        public int GetNumberOfClients() { return clientsList.Count;  }
 
 
         /*
