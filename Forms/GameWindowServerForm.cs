@@ -64,7 +64,7 @@ namespace Memory
                 //jesli ID ujemne - klient nie trafil, wyslij do reszty klientow i zarzadzaj nastepna ture
                 else if (gameInfo.currentPlayerConnectId < 0)
                 {
-                    connection.SendGameInfoToAllClients(gameInfo);
+                    connection.SendGameInfoExceptOne(gameInfo, -gameInfo.currentPlayerConnectId);
                     ShowSelectedCardsForAWhile(gameInfo, 1000);
                     gameInfo.currentPlayerConnectId = -gameInfo.currentPlayerConnectId;
                     //jesli nastepna tura zwraca 1 to znaczy, ze teraz tura serwera

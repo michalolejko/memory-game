@@ -452,7 +452,6 @@ namespace Memory
         {
             tooltipLabel.Text = "Ruch: Nie trafiłeś! Tracisz turę.";
             FormFunctions.AppendColoredTextWithTime(richTextBox1, tooltipLabel.Text, Color.Red);
-
             ShowSelectedCardsForAWhile(rowId1, colId1, rowId2, colId2, idCard1, idCard2, 1000);
             gameInfo.rowId1 = rowId1;
             gameInfo.rowId2 = rowId2;
