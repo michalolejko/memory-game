@@ -79,7 +79,7 @@ namespace Memory
             {
                 if (CheckIsItEndOfGame())
                     EndGame();
-                else
+                else 
                 {
                     Console.WriteLine("Pokazuje na chwile karty");
                     ShowSelectedCardsForAWhile(gameInfo, 1000);

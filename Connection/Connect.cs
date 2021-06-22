@@ -189,6 +189,23 @@ namespace memory_game.Connection
                 }
         }
 
+        public void SendGameInfoExceptOne(GameInfo msg, long notToHim)
+        {
+            /*
+            foreach (Client client in clientsList.Values)
+                if (client.tcpClient.Connected)
+                    binaryFormatter.Serialize(client.tcpClient.GetStream(), msg);*/
+            //dodaj swoje ID:
+            foreach (long key in clientsList.Keys)
+                if (clientsList[key].tcpClient.Connected)
+                {
+                    if (key == notToHim)
+                        continue;
+                    msg.myId = key;
+                    binaryFormatter.Serialize(clientsList[key].tcpClient.GetStream(), msg);
+                }
+        }
+
         public void SendGameInfoToAllClients()
         {
             SendGameInfoToAllClients(gameInfo);
