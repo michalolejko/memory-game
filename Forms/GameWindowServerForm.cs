@@ -14,13 +14,14 @@ namespace Memory
     {
         private Task responseTask;
         private CancellationTokenSource responseSource;
-        public GameWindowServerForm(Connect connection, GameInfo gameInfo) : base(connection)
+        public GameWindowServerForm(Connect connection, GameInfo gameInfo, ConnectionEnums.GameDifficulty gameDifficulty) : base(connection)
         {
             Console.WriteLine("____________________SERWER____________________\n");
             //con.KomunikatPrzybyl += new Connect.KomunikatEventsHandler(pol_KomunikatPrzybyl);
             /* connection.GameInfoReceived += new Connect.GameInfoReceivedEventsHandler(Con_GameInfoReceived);
              connection.successfullyConnected += new Connect.SuccessfullyConnectedEventsHandler(Con_SuccessfullyConnected);
              connection.unexpectedDisconnection += new Connect.UnexpectedDisconnectionEventsHandler(Con_UnexpectedDisctonnection);*/
+            this.gameDifficulty = gameDifficulty;
             InitializeComponent();
             this.gameInfo = gameInfo;
             InitPopulateCellsByGameInfo();
@@ -65,7 +66,7 @@ namespace Memory
                 else if (gameInfo.currentPlayerConnectId < 0)
                 {
                     connection.SendGameInfoExceptOne(gameInfo, -gameInfo.currentPlayerConnectId);
-                    ShowSelectedCardsForAWhile(gameInfo, 1000);
+                    ShowSelectedCardsForAWhile(gameInfo, displayTimeOfCards);
                     gameInfo.currentPlayerConnectId = -gameInfo.currentPlayerConnectId;
                     //jesli nastepna tura zwraca 1 to znaczy, ze teraz tura serwera
                     int nextTurnId = connection.NextTurn(gameInfo);
@@ -133,7 +134,7 @@ namespace Memory
         {
             gameInfo.currentPlayerConnectId = 1;
             base.GoodChoice(rowId1, colId1, rowId2, colId2, idCard1, idCard2);
-            
+
         }
         private void GameWindowServerForm_Load(object sender, EventArgs e)
         {
@@ -142,13 +143,35 @@ namespace Memory
 
         private void startGameButton_Click(object sender, EventArgs e)
         {
+            if (gameDifficulty != ConnectionEnums.GameDifficulty.Custom)
+                switch (gameDifficulty)
+                {
+                    case ConnectionEnums.GameDifficulty.Hard:
+                        {
+                            displayTimeOfCards = 500;
+                            break;
+                        }
+                    case ConnectionEnums.GameDifficulty.Medium:
+                        {
+                            displayTimeOfCards = 1000;
+                            break;
+                        }
+                    case ConnectionEnums.GameDifficulty.Easy:
+                        {
+                            displayTimeOfCards = 1500;
+                            break;
+                        }
+                }
+            else
+                gameInfo.colId1 = displayTimeOfCards;
             gameInfo.gameInProgress = true;
+            gameInfo.GameDifficulty = this.gameDifficulty;
             gameInfo.ResponseEnum = ConnectionEnums.ResponseEnum.InitInfoSent;
             int nextTurnId = connection.TryStartGameAsServer(gameInfo);
             if (nextTurnId == 1)
                 StartMyTurn();
             myIdInfo.Text = "Moje ID: 1";
-            FillPlayersList(connection.GetNumberOfPlayers());
+            FillPlayersList(connection.GetNumberOfClients());
             playerListBox.SetSelected(--nextTurnId, true);
             this.startGameButton.Text = "Rozpoczęto";
             this.startGameButton.Enabled = false;
@@ -176,5 +199,9 @@ namespace Memory
             base.StartMyTurn();
 
         }*/
+        public void SetCustomDifficultyTime(int cstmTime)
+        {
+            displayTimeOfCards = cstmTime;
+        }
     }
 }

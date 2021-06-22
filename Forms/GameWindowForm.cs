@@ -30,6 +30,8 @@ namespace Memory
         private bool isEndOfGame;
         private Image blankImage;
         private List<string> playersList;
+        protected ConnectionEnums.GameDifficulty gameDifficulty;
+        protected int displayTimeOfCards;
 
         public int[,] Cells
         {
@@ -381,7 +383,7 @@ namespace Memory
             Console.WriteLine("Pokaz na chwile karte...");
             CardFunctions.UpdateInfo(rowId1, colId1, rowId2, colId2, idCard1, idCard2, cardsGridView, gameInfo);
             /*Task task */
-            _ = CardFunctions.ShowSelectedCardsForAWhile(1000);
+            _ = CardFunctions.ShowSelectedCardsForAWhile(displayTimeOfCards);
             //task.Wait();
         }
 
@@ -389,7 +391,7 @@ namespace Memory
         {
             Console.WriteLine("Pokaz karte o parametrach: \nr1: {0}, r2: {0}, c1: {0}, c2: {0}, id1: {0}, id2: {0}", gi.rowId1, gi.rowId2, gi.colId1, gi.colId2, gi.idCard1, gi.idCard2);
             CardFunctions.UpdateInfo(gi.rowId1, gi.colId1, gi.rowId2, gi.colId2, gi.idCard1, gi.idCard2, cardsGridView, gi);
-            _ = CardFunctions.ShowSelectedCardsForAWhile(1000);
+            _ = CardFunctions.ShowSelectedCardsForAWhile(displayTimeOfCards);
         }
         private void ShowSelectedCards(int rowId1, int colId1, int rowId2, int colId2, int idCard1, int idCard2)
         {
@@ -452,7 +454,7 @@ namespace Memory
         {
             tooltipLabel.Text = "Ruch: Nie trafiłeś! Tracisz turę.";
             FormFunctions.AppendColoredTextWithTime(richTextBox1, tooltipLabel.Text, Color.Red);
-            ShowSelectedCardsForAWhile(rowId1, colId1, rowId2, colId2, idCard1, idCard2, 1000);
+            ShowSelectedCardsForAWhile(rowId1, colId1, rowId2, colId2, idCard1, idCard2, displayTimeOfCards);
             gameInfo.rowId1 = rowId1;
             gameInfo.rowId2 = rowId2;
             gameInfo.colId1 = colId1;
