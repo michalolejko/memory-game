@@ -7,6 +7,7 @@ using System;
 using System.Drawing;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace Memory
 {
@@ -14,6 +15,9 @@ namespace Memory
     {
         private Task responseTask;
         private CancellationTokenSource responseSource;
+
+        private Stopwatch[] stopwatches;
+
         public GameWindowServerForm(Connect connection, GameInfo gameInfo, ConnectionEnums.GameDifficulty gameDifficulty) : base(connection)
         {
             Console.WriteLine("____________________SERWER____________________\n");
@@ -21,6 +25,7 @@ namespace Memory
             /* connection.GameInfoReceived += new Connect.GameInfoReceivedEventsHandler(Con_GameInfoReceived);
              connection.successfullyConnected += new Connect.SuccessfullyConnectedEventsHandler(Con_SuccessfullyConnected);
              connection.unexpectedDisconnection += new Connect.UnexpectedDisconnectionEventsHandler(Con_UnexpectedDisctonnection);*/
+            
             this.gameDifficulty = gameDifficulty;
             InitializeComponent();
             this.gameInfo = gameInfo;
@@ -35,26 +40,27 @@ namespace Memory
 
         public override void Con_GameInfoReceived(object sender, GameInfoEventArgs e)
         {
-            Console.WriteLine("Serwer odebral wartosc " + e.gameInfo.currentPlayerConnectId);
+           // Console.WriteLine("Serwer odebral wartosc " + e.gameInfo.currentPlayerConnectId);
             //jesli jest zerem to serwer otrzymal response
             if (e.gameInfo.currentPlayerConnectId == 0)
             {
-                Console.WriteLine("Serwer otrzymal response");
-                //klient otrzymal info, ze teraz jego tura
-                if (e.gameInfo.ResponseEnum == ConnectionEnums.ResponseEnum.MyTurn)
-                {
-                    responseSource.Cancel();
-                    Console.WriteLine("Klient o id " + e.gameInfo.myId + " otrzymał info, o swojej turze");
-                }
+                //Console.WriteLine("Serwer otrzymal response");
                 //potwierdzenie, ze klient otrzymal init info
                 if (e.gameInfo.ResponseEnum == ConnectionEnums.ResponseEnum.InitInfoReceived)
                 {
-                    Console.WriteLine("Otrzymalem init response od id = " + e.gameInfo.myId);
+                    stopwatches[e.gameInfo.myId - 2].Stop();
+                    Console.WriteLine("[POMIAR CZASU] Koniec pomiaru czasu rozsyłania danych dla [id = " + e.gameInfo.myId + "] z czasem: {0} ms", stopwatches[e.gameInfo.myId -2].ElapsedMilliseconds);
                     if (e.gameInfo.cells != gameInfo.cells)
                     {
                         Console.WriteLine("Wysylam ponownie informacje do klienta o id: " + e.gameInfo.myId);
                         connection.SendGameInfoToPlayerById(connection.gameInfo, (int)e.gameInfo.myId);
                     }
+                }
+                //klient otrzymal info, ze teraz jego tura
+                else if (e.gameInfo.ResponseEnum == ConnectionEnums.ResponseEnum.MyTurn)
+                {
+                    responseSource.Cancel();
+                    Console.WriteLine("Klient o id " + e.gameInfo.myId + " otrzymał info, o swojej turze");
                 }
             }
             else
@@ -141,8 +147,19 @@ namespace Memory
 
         }
 
+        private void InitAndStartStopwatches()
+        {
+            //init
+            stopwatches = new Stopwatch[connection.GetNumberOfClients()];
+            Console.WriteLine("[POMIAR CZASU] Startuje pomiary czasów");
+            //start
+            for (int i = 0; i < connection.GetNumberOfClients(); i++)
+                stopwatches[i] = Stopwatch.StartNew();
+        }
+
         private void startGameButton_Click(object sender, EventArgs e)
         {
+
             if (gameDifficulty != ConnectionEnums.GameDifficulty.Custom)
                 switch (gameDifficulty)
                 {
@@ -167,6 +184,7 @@ namespace Memory
             gameInfo.gameInProgress = true;
             gameInfo.GameDifficulty = this.gameDifficulty;
             gameInfo.ResponseEnum = ConnectionEnums.ResponseEnum.InitInfoSent;
+            InitAndStartStopwatches();
             int nextTurnId = connection.TryStartGameAsServer(gameInfo);
             if (nextTurnId == 1)
                 StartMyTurn();
