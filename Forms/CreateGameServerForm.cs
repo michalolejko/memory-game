@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
 using System.Text;
 using System.Windows.Forms;
 using static memory_game.Connection.ConnectionEnums;
@@ -91,6 +93,8 @@ namespace Memory
             else return GameDifficulty.Custom;
         }
 
+
+
         private void createServerButton_Click(object sender, EventArgs e)
         {
             try
@@ -117,9 +121,28 @@ namespace Memory
             startGameButton.Select();
         }
 
+        public string GetLocalIPv4(NetworkInterfaceType _type)
+        {
+            string output = "";
+            foreach (NetworkInterface item in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (item.NetworkInterfaceType == _type && item.OperationalStatus == OperationalStatus.Up)
+                {
+                    foreach (UnicastIPAddressInformation ip in item.GetIPProperties().UnicastAddresses)
+                    {
+                        if (ip.Address.AddressFamily == AddressFamily.InterNetwork)
+                        {
+                            output = ip.Address.ToString();
+                        }
+                    }
+                }
+            }
+            return output;
+        }
+
         private void CreateGameServerForm_Load(object sender, EventArgs e)
         {
-
+            addressTextBox.Text = GetLocalIPv4(NetworkInterfaceType.Ethernet);
         }
 
         private void decksListBox_SelectedIndexChanged(object sender, EventArgs e)
